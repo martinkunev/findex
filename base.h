@@ -48,3 +48,51 @@
 
 // Unknown error.
 #define ERROR						-32767
+
+////////////////
+
+static inline void *alloc(size_t size)
+{
+	void *buffer = malloc(size);
+	if (!buffer) abort();
+	return buffer;
+}
+
+static inline void *realloc_(void *old, size_t size)
+{
+	void *new = (realloc)(old, size);
+	if (!new)
+	{
+		free(old);
+		abort();
+	}
+	return new;
+}
+#define realloc(buffer, size) realloc_((buffer), (size))
+
+////////////////
+
+typedef struct
+{
+	size_t size;
+	unsigned char data[];
+} bytes_t;
+
+#define bytes_t(n) struct \
+	{ \
+		size_t size; \
+		char data[n]; \
+	}
+
+#define bytes(value) {sizeof(value) - 1, value}
+
+#define bytes_define(variable, value) bytes_t(sizeof(value) - 1) variable = bytes(value)
+
+// TODO ? make static assert for offsetof(..., data) as this ensures the struct is compatible with bytes_t
+#define bytes_p(s) (bytes_t *)&( \
+		struct \
+		{ \
+			size_t size; \
+			char data[sizeof(s) - 1]; \
+		} \
+	){sizeof(s) - 1, (s)}

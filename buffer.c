@@ -7,7 +7,7 @@
 #define BUFFER_MIN 1024
 #define BUFFER_MAX 65536
 
-bool buffer_adjust(struct buffer *restrict buffer, size_t size)
+bool buffer_adjust(struct buffer *buffer, size_t size)
 {
 	// Check buffer size and adjust it if necessary.
 	// BUFFER_MIN <= size <= BUFFER_MAX
