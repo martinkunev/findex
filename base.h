@@ -70,6 +70,14 @@ static inline void *realloc_(void *old, size_t size)
 }
 #define realloc(buffer, size) realloc_((buffer), (size))
 
+static inline void *dupalloc(void *old, size_t size)
+{
+	void *new = malloc(size);
+	if (!new) abort();
+	memcpy(new, old, size);
+	return new;
+}
+
 ////////////////
 
 typedef struct

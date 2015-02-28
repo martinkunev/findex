@@ -1,6 +1,5 @@
 #include <dirent.h>
 #include <fcntl.h>
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -10,7 +9,6 @@
 
 #include "base.h"
 #include "arch.h"
-#include "buffer.h"
 #include "magic.h"
 #include "path.h"
 #include "findex.h"
@@ -50,7 +48,7 @@ static int db_insert(int db, char *path, size_t path_length, const struct stat *
 
 	{
 		ssize_t size;
-		char buffer[MAGIC_SIZE];
+		unsigned char buffer[MAGIC_SIZE];
 		int entry;
 
 		entry = open(path, O_RDONLY);
@@ -90,14 +88,14 @@ static int db_index(int db, char *path, size_t path_length)
 
 	int status;
 
-	entry = alloc(offsetof(struct dirent, d_name) + pathconf(path, _PC_NAME_MAX) + 1);
-
 	if (path_length + 1 > PATH_SIZE_LIMIT)
 	{
 		status = ERROR_MEMORY;
 		goto finally;
 	}
 	path[path_length] = 0;
+
+	entry = alloc(offsetof(struct dirent, d_name) + pathconf(path, _PC_NAME_MAX) + 1);
 
 	dir = opendir(path);
 	if (!dir) return -1; // TODO better error
@@ -180,7 +178,7 @@ int main(int argc, char *argv[])
 	for(i = 1; i < argc; ++i)
 	{
 		size_t path_length;
-		char *restrict path = normalize(argv[i], strlen(argv[i]), &path_length);
+		char *restrict path = normalize_(argv[i], strlen(argv[i]), &path_length);
 		if (!path)
 		{
 			status = ERROR_MEMORY;
