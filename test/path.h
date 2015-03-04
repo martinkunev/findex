@@ -29,10 +29,10 @@ static void check(const bytes_t *restrict relative, const bytes_t *restrict answ
 	memcpy(path[2], canary, sizeof(canary));
 
 	status = normalize(path[1], &path_length, relative->data, relative->size);
-	ck_assert(status == 0);
+	ck_assert_uint_eq(status, 0);
+	ck_assert_uint_eq(path_length, answer->size);
 	ck_assert(!memcmp(path[0], canary, sizeof(canary)));
 	ck_assert(!memcmp(path[1], answer->data, answer->size));
-	ck_assert(!memcmp(path[1] + answer->size, canary, sizeof(canary) - answer->size));
 	ck_assert(!memcmp(path[2], canary, sizeof(canary)));
 }
 
