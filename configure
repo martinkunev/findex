@@ -1,0 +1,25 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+my $prefix = '/usr/local';
+
+for (@ARGV)
+{
+	if (/^--prefix=(.*)/)
+	{
+		$prefix = $1;
+	}
+	else
+	{
+		print "Usage: $0 [OPTION ...]\n\t--prefix=<prefix>    \tspecify install location (default /usr/local)\n";
+		exit;
+	}
+}
+
+$prefix .= '/';
+$prefix =~ s|/|\\/|g;
+
+open STDOUT, '>', 'Makefile';
+system 'sed', '-e', "s/\@{PREFIX}/$prefix/", 'Makefile.in';

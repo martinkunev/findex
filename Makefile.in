@@ -1,0 +1,30 @@
+export CC=gcc
+export CFLAGS=-std=c99 -pthread -O2 -fstrict-aliasing -fomit-frame-pointer -D_FILE_OFFSET_BITS=64 -D_BSD_SOURCE -pedantic -Werror -Wstrict-aliasing -Wchar-subscripts -Wimplicit -Wsequence-point -Wcast-align -Wstrict-prototypes -Wno-unused-result
+export LDFLAGS=-pthread
+
+all: findex ffind
+
+findex: findex.o magic.o path.o
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o findex
+
+ffind: ffind.o path.o
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o ffind
+
+check: clean
+	$(MAKE) -C test check
+
+clean:
+	rm -f *.o
+	rm -f findex ffind
+	$(MAKE) -C test clean
+
+mrproper: clean
+	rm -f Makefile
+
+install: all
+	cp findex @{PREFIX}bin/
+	cp ffind @{PREFIX}bin/
+
+uninstall:
+	rm -f @{PREFIX}bin/findex
+	rm -f @{PREFIX}bin/ffind

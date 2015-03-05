@@ -1,3 +1,35 @@
+Filement Index is a simple collection of tools for indexed search and file metadata lookup. It uses a file-based database. It consists of two applications:
+findex - Traverses the filesystem and stores file metadata in the database.
+ffind - Finds files in the database, based on filtering criteria.
+
+Filement Index is in an early stage of development and a lot of things need improvement. The format of the database could be changed in the future.
+
+Filement Index is created to solve several problems:
+* provide a database for fast lookup of file information
+	// TODO blog post
+* overcome the problems of tools like locate and slocate
+  - locate is prone to privilege escalation attacks because it runs with SUID
+  - regular users can only use locate's database through locate; this leads to various issues when an application wants to perform indexed search
+  - locate provides only filename information and supports only search by filename
+  - regular users can't update the database of locate
+
+The database of Filement Index can be useful for the following types of application:
+* search tools
+* file managers
+* servers that need fast lookup of file information (e.g. an http server)
+
+----
+
+The installation of Filement Index creates two executables:
+	/usr/local/bin/findex
+	/usr/local/bin/ffind
+
+Each user has a local database.
+Database location:
+	~/.cache/filement
+
+----
+
 Database storing information about files
 
 library for interaction with the database
@@ -15,34 +47,6 @@ file information:
 	mtime
 	preview (thumbnail, etc.)
 
-----
-
-
-
-----
-
-<name> is a simple collection of tools for searching and file metadata lookup. It uses a file-based database. It consists of two applications:
-findex - Traverses the filesystem and stores file metadata in the database.
-ffind - Finds files in the database, based on filtering criteria.
-
-<name> is in an early stage of development. It works but there is a lot more work to be done.
-
-//
-
-<name> is created for several reasons:
-* to overcome the problems of tools like locate and slocate
-  - locate is prone to privilege escalation attacks because it runs with SUID
-  - regular users can only use locate's database through locate; this leads to various issues when an application wants to perform indexed search
-  - locate provides only filename information and supports only search by filename
-  - regular users can't update the database of locate
-* to provide a database for fast lookup of file information
-	// TODO blog post
-
-usage:
-* search tools
-* file managers
-* servers that need fast lookup of file information (http, etc.)
-
 TODO library
 TODO performance imporvements (more sophisticated database; database modification instead of generating a new database; etc.)
 TODO compression to reduce file size?
@@ -56,7 +60,6 @@ TODO reference the blogpost about file types
 
 ----
 
-one database for each user in ~/.cache/filement
 each user can set up a list of directories to be indexed
 
 filenames in the database must be stored in UTF-8

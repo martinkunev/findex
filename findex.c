@@ -13,28 +13,11 @@
 #include "path.h"
 #include "findex.h"
 
-#define DB_PATH "/.cache/filement" /* database path relative to the user's home directory */
+#define DB_ACCESS 0600
 
 #define STRING(s) (s), sizeof(s) - 1
 
 // TODO i don't follow symbolic links; is this okay?
-
-static int db_path_init(char path[static PATH_SIZE_LIMIT])
-{
-	const char *home;
-	size_t home_length;
-
-	home = getenv("HOME");
-	if (!home) return ERROR_MISSING;
-	home_length = strlen(home);
-	if ((home_length + sizeof(DB_PATH)) > PATH_SIZE_LIMIT) return ERROR_MISSING;
-
-	memcpy(path, home, home_length);
-	memcpy(path + home_length, DB_PATH, sizeof(DB_PATH) - 1);
-	path[home_length + sizeof(DB_PATH) - 1] = 0;
-
-	return 0;
-}
 
 static int db_insert(int db, char *path, size_t path_length, const struct stat *restrict info)
 {
@@ -170,23 +153,22 @@ int main(int argc, char *argv[])
 
 	status = db_path_init(path);
 	if (status) return status;
-	db = creat(path, 0600);
+	db = creat(path, DB_ACCESS);
 	if (db < 0) return db; // TODO better error checking
 
 	write(db, STRING(HEADER));
 
 	for(i = 1; i < argc; ++i)
 	{
-		size_t path_length;
-		char *restrict path = normalize_(argv[i], strlen(argv[i]), &path_length);
-		if (!path)
+		char target[PATH_SIZE_LIMIT];
+		size_t target_length;
+		if (normalize(target, &target_length, argv[i], strlen(argv[i])))
 		{
-			status = ERROR_MEMORY;
+			status = ERROR_MEMORY; // TODO fix this
 			goto error;
 		}
 
-		status = db_index(db, path, path_length);
-		free(path);
+		status = db_index(db, target, target_length);
 		if (status) goto error;
 	}
 

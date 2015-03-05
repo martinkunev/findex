@@ -21,7 +21,7 @@
 
 struct pattern
 {
-	const char *data;
+	const unsigned char *data;
 	size_t length;
 	size_t chars, asterisks;
 };
@@ -52,7 +52,7 @@ static int usage(int code)
 	return code;
 }
 
-static int match_internal(const char *restrict pattern, size_t pattern_length, size_t chars, size_t asterisks, const char *restrict string, size_t string_length)
+static int match_internal(const unsigned char *restrict pattern, size_t pattern_length, size_t chars, size_t asterisks, const unsigned char *restrict string, size_t string_length)
 {
 	size_t pattern_index = 0, string_index = 0;
 
@@ -117,7 +117,7 @@ static int match_internal(const char *restrict pattern, size_t pattern_length, s
 
 	return (string_index == string_length);
 }
-static inline int match(const struct pattern *restrict pattern, const char *restrict data, size_t length)
+static inline int match(const struct pattern *restrict pattern, const unsigned char *restrict data, size_t length)
 {
 	return match_internal(pattern->data, pattern->length, pattern->chars, pattern->asterisks, data, length);
 }
@@ -125,7 +125,7 @@ static inline int match(const struct pattern *restrict pattern, const char *rest
 // Initializes struct pattern with data with the specified length.
 // Counts the * and the non-* characters in the pattern.
 // Returns whether the pattern is valid.
-static int pattern_init(struct pattern *restrict pattern, const char *restrict data, size_t length)
+static int pattern_init(struct pattern *restrict pattern, const unsigned char *restrict data, size_t length)
 {
 	size_t index;
 
@@ -171,10 +171,9 @@ static int execute(const char *path, size_t length, char *argv[])
 {
 	if (fork())
 	{
-		// TODO do something with status
 		int status;
 		waitpid(0, &status, 0);
-		return 0;
+		return status;
 	}
 	else
 	{
@@ -205,8 +204,7 @@ static int execute(const char *path, size_t length, char *argv[])
 			if (count)
 			{
 				// WARNING: This memory is never freed because it is passed to execvp().
-				buffer = malloc((end - argv[index]) + count * (length - 2) + 1);
-				if (!buffer) _exit(1); // TODO
+				buffer = alloc((end - argv[index]) + count * (length - 2) + 1);
 
 				end = argv[index];
 				argv[index] = buffer;
@@ -224,7 +222,6 @@ static int execute(const char *path, size_t length, char *argv[])
 					*buffer++ = *end++;
 				}
 				*buffer = 0;
-
 			}
 		} while (argv[++index]);
 
@@ -242,6 +239,8 @@ static int find(const unsigned char *db, size_t dbsize, int (*callback)(const ch
 	const unsigned char *path;
 
 	size_t offset, left;
+
+	int status;
 
 	// Check file header.
 	if (dbsize < (sizeof(HEADER) - 1)) return ERROR_INPUT; // unexpected EOF
@@ -292,29 +291,42 @@ static int find(const unsigned char *db, size_t dbsize, int (*callback)(const ch
 				continue;
 		}
 
-		callback(path, file.path_length, argv); // TODO use return code
+		status = callback((const char *)path, file.path_length, argv); // TODO fix this cast
+		if (status) return status;
 	}
 
 	return 0;
 }
 
-static int db_open(void)
+// TODO ? indicate error conditions
+static unsigned char *db_open(struct stat *info)
 {
-	char path[PATH_SIZE_MAX];
-	const char *home;
-	size_t home_length;
+	char db_path[PATH_SIZE_MAX];
+	int db;
 
-	home = getenv("HOME");
-	if (!home) return -1;
+	unsigned char *buffer;
 
-	home_length = strlen(home);
-	if ((home_length + sizeof(DB_PATH) - 1) >= PATH_SIZE_MAX) return -1;
+	if (db_path_init(db_path)) return 0;
 
-	memcpy(path, home, home_length);
-	memcpy(path + home_length, DB_PATH, sizeof(DB_PATH) - 1);
-	path[home_length + sizeof(DB_PATH) - 1] = 0;
+	db = open(db_path, O_RDONLY);
+	if (db < 0) return 0;
 
-	return open(path, O_RDONLY);
+	if (fstat(db, info) < 0)
+	{
+		close(db);
+		return 0;
+	}
+
+	buffer = mmap(0, info->st_size, PROT_READ, MAP_PRIVATE, db, 0);
+	close(db);
+	if (buffer == MAP_FAILED) return 0;
+
+	return buffer;
+}
+
+static void db_close(unsigned char *restrict buffer, const struct stat *restrict info)
+{
+	munmap(buffer, info->st_size);
 }
 
 int main(int argc, char *argv[])
@@ -362,12 +374,12 @@ int main(int argc, char *argv[])
 			else if (!memcmp(argv[index] + 1, STRING("name")))
 			{
 				if (++index == argc) return usage(1);
-				if (!pattern_init(&pattern_name, argv[index], strlen(argv[index]))) return usage(1);
+				if (!pattern_init(&pattern_name, (const unsigned char *)argv[index], strlen(argv[index]))) return usage(1); // TODO fix the cast
 			}
 			else if (!memcmp(argv[index] + 1, STRING("path")))
 			{
 				if (++index == argc) return usage(1);
-				if (!pattern_init(&pattern_path, argv[index], strlen(argv[index]))) return usage(1);
+				if (!pattern_init(&pattern_path, (const unsigned char *)argv[index], strlen(argv[index]))) return usage(1); // TODO fix the cast
 			}
 			else if (!memcmp(argv[index] + 1, STRING("size")))
 			{
@@ -468,34 +480,17 @@ int main(int argc, char *argv[])
 
 	if (!location) return usage(1);
 
-	location = normalize_(location, location_length, &location_length);
-	if (!location) return -1; // TODO
+	char path[PATH_SIZE_LIMIT];
+	if (normalize(path, &location_length, location, location_length)) return -1; // TODO
+	location = path;
 
 	struct stat info;
-	int db = db_open();
-	if (db < 0)
-	{
-		free(location);
-		return -1;
-	}
-	if (fstat(db, &info) < 0)
-	{
-		free(location);
-		return -1;
-	}
-	char *buffer = mmap(0, info.st_size, PROT_READ, MAP_PRIVATE, db, 0);
-	close(db);
-	if (buffer == MAP_FAILED)
-	{
-		free(location);
-		return -1;
-	}
+	unsigned char *buffer = db_open(&info);
+	if (!buffer) return -1; // TODO
 
 	int status = find(buffer, info.st_size, (exec_index ? execute : print), argv);
 
-	munmap(buffer, info.st_size);
-
-	free(location);
+	db_close(buffer, &info);
 
 	if (status)
 	{
