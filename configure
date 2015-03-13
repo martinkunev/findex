@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 my $prefix = '/usr/local';
+my $version = '0.1.0';
 
 for (@ARGV)
 {
@@ -18,8 +19,28 @@ for (@ARGV)
 	}
 }
 
+##
+
+open STDOUT, '>', 'src/ffind.c';
+system 'sed', '-e', "s/\@{VERSION}/$version/", 'src/ffind.c.in';
+close STDOUT;
+
+##
+
 $prefix .= '/';
 $prefix =~ s|/|\\/|g;
 
 open STDOUT, '>', 'Makefile';
 system 'sed', '-e', "s/\@{PREFIX}/$prefix/", 'Makefile.in';
+close STDOUT;
+
+##
+
+#my ($sec, $min, $hour, $mday, $month, $year, $wday, $yday, $dst) = localtime();
+#my @months = qw|January February March April May June July August September October November December|;
+#my $date = "$mday $months[$month] $year";
+my $date = '13 March 2015';
+
+open STDOUT, '>', 'ffind.1';
+system 'sed', '-e', "s/\@{DATE}/$date/", '-e', "s/\@{VERSION}/$version/", 'ffind.1.in';
+close STDOUT;

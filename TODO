@@ -4,7 +4,7 @@ Use a more sophisticated database. Goals:
 	easy modification
 	fast search
 	store bigger data (like file preview for images and audio)
-	library providing API for the database
+	library providing API to the database
 
 Configuration file for findex
 	indicate what to index
@@ -13,5 +13,7 @@ Make it possible to run indexing as a deamon (and use inotify, etc.)
 	maybe don't index when on battery
 
 findex should work with higher nice
+
+support multiple search locations for ffind
 
 Document how to put findex in crontab

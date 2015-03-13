@@ -14,7 +14,7 @@ Filement Index is created to solve several problems:
   - regular users can't update the database of locate
 * provide a database for fast lookup of file information
 	File type must be recognized by file contents. This can be done once and stored in a database for future lookup.
-	// TODO blog post
+	If you are interested in the reasoning that led me to that conclusion, read the manifesto.
 
 The database of Filement Index can be useful for the following types of application:
 * search tools
@@ -22,6 +22,7 @@ The database of Filement Index can be useful for the following types of applicat
 * servers that need fast lookup of file information (e.g. an http server)
 
 -- INSTALL --
+
 $ ./configure
 $ make
 # make install
@@ -29,23 +30,21 @@ $ make
 You can specify --prefix=<path> to configure in order to change the install location (the default is /usr/local/).
 
 -- UNINSTALL --
+
 # make uninstall
 
 This will leave the Filement Index database. It can be deleted manually from the user's home directory:
 $ rm ~/.cache/filement
 
 -- USAGE --
+
 First, use findex to create a database with file information. You must specify what directories to be indexed (typically this would be the user's home directory). Depending on the number of file this can take from several seconds to several minutes.
 The database is user-specific. This means that each user must run findex on their files.
 You can use cron to make findex run every once in a while (for example every night).
 
-When you want to find files, use ffind. The options of ffind are similar to the options of find. ffind searches only in the database (not in the filesystem).
+When you want to find files, use ffind. The options of ffind are similar to the options of find. ffind searches only in the database (not in the filesystem). See ffind(1) for more information.
 
 -- NOTES --
-
-Each user has a local database.
-Database location:
-	~/.cache/filement
 
 For each indexed file, the database stores the following information:
 path	Absolute path to the file.
@@ -54,4 +53,4 @@ content	Information about file contents.
 mtime	Time of last modification.
 size	File size in bytes.
 
-File type (content) recognition is in a very initial phase.
+File type (content) recognition is in a very early phase. Work is done to improve it.

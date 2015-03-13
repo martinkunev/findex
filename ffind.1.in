@@ -1,0 +1,116 @@
+." Manpage for ffind
+.TH ffind 1 "@{DATE}" "version @{VERSION}"
+.SH NAME
+ffind - indexed search for files in a directory hierarchy
+.SH SYNOPSIS
+\fBffind\fR <path> [FILTERS...] [\fB-exec\fR COMMAND ;]
+.SH DESCRIPTION
+\fBffind\fR searches the database created by findex for files located in <path> that match all the specified filters. For each of the files found, an action is performed.
+.SH EXPRESSIONS
+.SS FILTERS
+.TP
+\fB-name\fR \fIname\fR
+File is named \fIname\fR. Wildcards `?' and `*' are supported.
+.TP
+\fB-path\fR \fIpath\fR
+File path is \fIpath\fR. Wildcards `?' and `*' are supported.
+.TP
+\fB-type\fR \fItype\fR
+File is of type \fItype\fR. Supported values:
+.RS
+.TP
+`f'
+regular file
+.TP
+`d'
+directory
+.TP
+`l'
+soft link
+.TP
+`b'
+block device
+.TP
+`c'
+character device
+.TP
+`p'
+named pipe
+.TP
+`s'
+socket
+.RE
+.TP
+\fB-size\fR \fIn\fR[cbkKMGT]
+The file has size of \fIn\fR units. Supported units:
+.RS
+.TP
+`c'
+bytes
+.TP
+`b'
+512-byte blocks (default)
+.TP
+`K'
+kilobytes (1024 bytes)
+.TP
+`M'
+megabytes (1024 kilobytes)
+.TP
+`G'
+gigabytes (1024 megabytes)
+.TP
+`T'
+terabytes (1024 gigabytes)
+.RE
+.TP
+\fB-content\fR \fIcontent\fR
+Filter by file content. Supported values for \fIcontent\fR:
+.RS
+.TP
+text
+Text file encoded in UTF-8
+.TP
+archive
+Archive or compressed archive
+.TP
+document
+Formatted document file
+.TP
+image
+Image file
+.TP
+audio
+Audio data file
+.TP
+video
+Video data file
+.TP
+multimedia
+Multimedia file
+.RE
+.PP
+.SS ACTIONS
+The default action is \fB-print\fR
+.TP
+\fB-print\fR
+Print each match
+.TP
+\fB-exec\fR
+Execute a command for each match
+.SH EXAMPLES
+.TP
+$ ffind / -content image
+Finds all the files which are recognized as images.
+.TP
+$ ffind /home/foo -name '*.db' -size +1G
+Finds the files in /home/foo with name ending in .db which are at least 1GiB big.
+.SH FILES
+.TP
+~/.cache/filement
+The database searched (user-specific).
+.SH SEE ALSO
+find(1), locate(1)
+.SH AUTHOR
+Written by Martin Kunev <martinkunev@gmail.com>.
+.SH COPYRIGHT

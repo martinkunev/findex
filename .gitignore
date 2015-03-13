@@ -2,7 +2,10 @@
 
 *.[oa]
 /Makefile
-regex.c
+src/regex.c
+src/ffind.c
 src/findex
 src/ffind
 test/path
+ffind.1
+ffind.1.gz

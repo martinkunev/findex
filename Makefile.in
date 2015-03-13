@@ -3,6 +3,7 @@ export CFLAGS=-std=c99 -pthread -O2 -fstrict-aliasing -fomit-frame-pointer -D_FI
 export LDFLAGS=-pthread
 
 all: findex ffind
+	gzip < ffind.1 > ffind.1.gz
 
 findex:
 	$(MAKE) -C src $@
@@ -16,14 +17,19 @@ check: clean
 clean:
 	$(MAKE) -C src $@
 	$(MAKE) -C test $@
+	rm -f ffind.1.gz
 
 mrproper: clean
 	rm -f Makefile
+	rm -f ffind.1
+	rm -f src/ffind.c
 
 install: all
 	cp src/findex @{PREFIX}bin/
 	cp src/ffind @{PREFIX}bin/
+	cp ffind.1.gz @{PREFIX}share/man/man1/
 
 uninstall:
 	rm -f @{PREFIX}bin/findex
 	rm -f @{PREFIX}bin/ffind
+	rm -f @{PREFIX}share/man/man1/ffind.1.gz
