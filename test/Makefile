@@ -1,10 +1,10 @@
-CFLAGS:=$(CFLAGS) -I../ -DTEST -O0 -g
+CFLAGS:=$(CFLAGS) -I../ -DTEST
 LDFLAGS:=$(LDFLAGS) -lcheck
 
 check: path
 	./path
 
-path: ../path.o
+path: ../src/path.o
 	$(CC) $^ $(LDFLAGS) -o $@
 
 clean:

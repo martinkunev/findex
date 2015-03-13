@@ -1,9 +1,8 @@
 #include <inttypes.h>
 #include <unistd.h>
 
-//#include "types.h"
-#include "magic.h"
 #include "arch.h"
+#include "magic.h"
 
 // WARNING: Files < 16B are never considered as binary
 
@@ -366,7 +365,7 @@ static uint32_t content_unknown(const unsigned char *restrict magic, size_t size
 			return type_unknown;
 		}
 
-		// There should be type bytes starting with 10 bits after the first byte.
+		// There should be type number of bytes, starting with 10 bits after the first byte.
 		while (type--)
 			if ((++start == end) || ((*start & 0xc0) != 0x80))
 				return type_unknown;

@@ -151,6 +151,7 @@ int main(int argc, char *argv[])
 		return ERROR_INPUT;
 	}
 
+	// TODO create parent directory?
 	status = db_path_init(path);
 	if (status) return status;
 	db = creat(path, DB_ACCESS);

@@ -1,0 +1,17 @@
+Redesign file content values and handling
+
+Use a more sophisticated database. Goals:
+	easy modification
+	fast search
+	store bigger data (like file preview for images and audio)
+	library providing API for the database
+
+Configuration file for findex
+	indicate what to index
+
+Make it possible to run indexing as a deamon (and use inotify, etc.)
+	maybe don't index when on battery
+
+findex should work with higher nice
+
+Document how to put findex in crontab

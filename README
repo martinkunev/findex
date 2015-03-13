@@ -1,142 +1,57 @@
+FILEMENT INDEX
+
 Filement Index is a simple collection of tools for indexed search and file metadata lookup. It uses a file-based database. It consists of two applications:
 findex - Traverses the filesystem and stores file metadata in the database.
-ffind - Finds files in the database, based on filtering criteria.
+ffind - Finds files in the database, based on filtering criteria. Uses interface similar to that of find(1).
 
-Filement Index is in an early stage of development and a lot of things need improvement. The format of the database could be changed in the future.
+Filement Index is in an early stage of development and a lot of things need improvement. The format of the database will probably change in the future.
 
 Filement Index is created to solve several problems:
-* provide a database for fast lookup of file information
-	// TODO blog post
 * overcome the problems of tools like locate and slocate
   - locate is prone to privilege escalation attacks because it runs with SUID
   - regular users can only use locate's database through locate; this leads to various issues when an application wants to perform indexed search
   - locate provides only filename information and supports only search by filename
   - regular users can't update the database of locate
+* provide a database for fast lookup of file information
+	File type must be recognized by file contents. This can be done once and stored in a database for future lookup.
+	// TODO blog post
 
 The database of Filement Index can be useful for the following types of application:
 * search tools
 * file managers
 * servers that need fast lookup of file information (e.g. an http server)
 
-----
+-- INSTALL --
+$ ./configure
+$ make
+# make install
 
-The installation of Filement Index creates two executables:
-	/usr/local/bin/findex
-	/usr/local/bin/ffind
+You can specify --prefix=<path> to configure in order to change the install location (the default is /usr/local/).
+
+-- UNINSTALL --
+# make uninstall
+
+This will leave the Filement Index database. It can be deleted manually from the user's home directory:
+$ rm ~/.cache/filement
+
+-- USAGE --
+First, use findex to create a database with file information. You must specify what directories to be indexed (typically this would be the user's home directory). Depending on the number of file this can take from several seconds to several minutes.
+The database is user-specific. This means that each user must run findex on their files.
+You can use cron to make findex run every once in a while (for example every night).
+
+When you want to find files, use ffind. The options of ffind are similar to the options of find. ffind searches only in the database (not in the filesystem).
+
+-- NOTES --
 
 Each user has a local database.
 Database location:
 	~/.cache/filement
 
-----
+For each indexed file, the database stores the following information:
+path	Absolute path to the file.
+mode	Access rights and other information as provided by stat(2).
+content	Information about file contents.
+mtime	Time of last modification.
+size	File size in bytes.
 
-Database storing information about files
-
-library for interaction with the database
-library for retrieving file information
-
-application that updates the database (can work as a daemon)
-application that retrieves information about a file
-application that searches in the database
-
-file information:
-	name
-	mode
-	content
-	size
-	mtime
-	preview (thumbnail, etc.)
-
-TODO library
-TODO performance imporvements (more sophisticated database; database modification instead of generating a new database; etc.)
-TODO compression to reduce file size?
-TODO inotify
-TODO run the indexing with high nice
-TODO don't index when on battery
-
-notable alternatives: recoll, metatracker, mdfind, strigi
-
-TODO reference the blogpost about file types
-
-----
-
-each user can set up a list of directories to be indexed
-
-filenames in the database must be stored in UTF-8
-command line filenames must be passed as UTF-8
-
----- binary file types ----
-+------+------+------+------+
-|  00  | type |format|layout|
-+------+------+------+------+
-
-type
-* object code													00
-* virtual filesystem (archive, disk image, database, etc.)		02
-* document														04
-	legacy examples: pdf
-* image															05
-	legacy examples: png, jpeg, gif
-* audio															08
-	legacy examples: mp3, wave, vorbis
-* video															09
-	legacy examples: theora, avi
-* multimedia													0c
-	legacy examples: matroska, webm, mp4, riff, ogg
-* unknown														ff
-
-/*
-00  object code
-
-02  archive
-03  database (including torrent)
-
-08  document
-09  spreadsheet
-0a  ?presentation
-
-10  raster image (including fonts)
-11  vector image (including fonts)
-12  modeling
-13  audio
-14  <reserved> (for video)
-
-18  multimedia
-*/
-
-format
-// only the lowest 7 bits are significant; the highest bit is set for legacy formats
-
-format and layout numbers are not yet fixed (they may change in the future)
-
-
-file types
-* text
-	first byte: everything except \x00
-	source code
-		//
-		/*
-		--
-		{-
-		#!
-		<!DOCTYPE
-		<?xml
-		<?php
-		<?
-		<html
-		<xml
-		;
-		{"
-		{
-		[
-		etc.
-
-types are transparent when it comes to compression
-
-example queries:
-* find all html documents
-* find all images
-* find all songs
-* find all movies
-* find all archives
-* find all documents
+File type (content) recognition is in a very initial phase.

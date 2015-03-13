@@ -1,8 +1,8 @@
 # Lines that start with '#' are comments.
 
 *.[oa]
-Makefile
-findex
-ffind
+/Makefile
 regex.c
+src/findex
+src/ffind
 test/path

@@ -4,26 +4,25 @@ export LDFLAGS=-pthread
 
 all: findex ffind
 
-findex: findex.o magic.o path.o
-	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o findex
+findex:
+	$(MAKE) -C src $@
 
-ffind: ffind.o path.o
-	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o ffind
+ffind:
+	$(MAKE) -C src $@
 
 check: clean
 	$(MAKE) -C test check
 
 clean:
-	rm -f *.o
-	rm -f findex ffind
-	$(MAKE) -C test clean
+	$(MAKE) -C src $@
+	$(MAKE) -C test $@
 
 mrproper: clean
 	rm -f Makefile
 
 install: all
-	cp findex @{PREFIX}bin/
-	cp ffind @{PREFIX}bin/
+	cp src/findex @{PREFIX}bin/
+	cp src/ffind @{PREFIX}bin/
 
 uninstall:
 	rm -f @{PREFIX}bin/findex

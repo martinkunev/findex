@@ -13,11 +13,15 @@
 #include "path.h"
 #include "findex.h"
 
+// http://www.cyberciti.biz/faq/linux-unix-creating-a-manpage/
+
 #define PATH_SIZE_MAX 4096
 
 #define DB_PATH "/.cache/filement" /* database path relative to the home directory */
 
 #define STRING(s) (s), sizeof(s) - 1
+
+#define VERSION "0.1.0"
 
 struct pattern
 {
@@ -42,12 +46,21 @@ static uint32_t filecontent;
 static int usage(int code)
 {
 	write(1, STRING(
-"Usage: find <path> [filters] [-exec command ;]\n"
+"Usage: ffind <path> [filters] [-exec command ;]\n"
 "\t-type\t Filter by file type\n"
 "\t-name\t Filter by filename\n"
 "\t-path\t Filter by path\n"
 "\t-size\t Filter by size\n"
 "\t-content Filter by content\n"
+	));
+	return code;
+}
+
+static int version(int code)
+{
+	write(1, STRING(
+"ffind " VERSION "\n"
+"Written by Martin Kunev\n"
 	));
 	return code;
 }
@@ -337,7 +350,11 @@ int main(int argc, char *argv[])
 		// Parse filters.
 		if (*argv[index] == '-')
 		{
-			if (!memcmp(argv[index] + 1, STRING("type")))
+			if (!memcmp(argv[index] + 1, STRING("version")) || ((argv[index][1] == '-') && !memcmp(argv[index] + 2, STRING("version"))))
+			{
+				return version(0);
+			}
+			else if (!memcmp(argv[index] + 1, STRING("type")))
 			{
 				if (++index == argc) return usage(1);
 
@@ -469,6 +486,10 @@ int main(int argc, char *argv[])
 					index += 1;
 				}
 			}
+			else if (!memcmp(argv[index] + 1, STRING("print")))
+			{
+				exec_index = 0;
+			}
 			else return usage(1);
 		}
 		else
@@ -492,10 +513,7 @@ int main(int argc, char *argv[])
 
 	db_close(buffer, &info);
 
-	if (status)
-	{
-		// TODO
-	}
+	if (status) return -1; // TODO
 
 	return 0;
 }

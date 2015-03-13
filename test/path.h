@@ -19,7 +19,7 @@ static void check(const bytes_t *restrict relative, const bytes_t *restrict answ
 	char path[3][PATH_SIZE_LIMIT];
 	size_t path_length;
 
-	char canary[PATH_SIZE_LIMIT];
+	unsigned char canary[PATH_SIZE_LIMIT];
 	int status;
 
 	// Use 10100101 as canary.
@@ -28,7 +28,7 @@ static void check(const bytes_t *restrict relative, const bytes_t *restrict answ
 	memcpy(path[1], canary, sizeof(canary));
 	memcpy(path[2], canary, sizeof(canary));
 
-	status = normalize(path[1], &path_length, relative->data, relative->size);
+	status = normalize(path[1], &path_length, (const char *)relative->data, relative->size); // TODO fix the cast
 	ck_assert_uint_eq(status, 0);
 	ck_assert_uint_eq(path_length, answer->size);
 	ck_assert(!memcmp(path[0], canary, sizeof(canary)));
