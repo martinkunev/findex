@@ -27,9 +27,9 @@ mrproper: clean
 install: all
 	cp src/findex @{PREFIX}bin/
 	cp src/ffind @{PREFIX}bin/
-	cp ffind.1.gz @{PREFIX}share/man/man1/
+	cp ffind.1.gz /usr/share/man/man1/
 
 uninstall:
 	rm -f @{PREFIX}bin/findex
 	rm -f @{PREFIX}bin/ffind
-	rm -f @{PREFIX}share/man/man1/ffind.1.gz
+	rm -f /usr/share/man/man1/ffind.1.gz
