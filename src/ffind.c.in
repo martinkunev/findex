@@ -1,3 +1,22 @@
+/*
+ * Filement Index
+ * Copyright (C) 2015  Martin Kunev <martinkunev@gmail.com>
+ *
+ * This file is part of Filement Index.
+ *
+ * Filement Index is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation version 3 of the License.
+ *
+ * Filement Index is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Filement Index.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <fcntl.h>
 #include <inttypes.h>
 #include <stdlib.h>
@@ -21,7 +40,7 @@
 
 #define STRING(s) (s), sizeof(s) - 1
 
-#define VERSION "@{VERSION}"
+#define VERSION "0.1.0"
 
 struct pattern
 {
@@ -60,7 +79,10 @@ static int version(int code)
 {
 	write(1, STRING(
 "ffind " VERSION "\n"
-"Written by Martin Kunev\n"
+"Copyright (C) 2015  Martin Kunev <martinkunev@gmail.com>\n"
+"License GPLv3: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>\n"
+"This is free software: you are free to change and redistribute it.\n"
+"There is NO WARRANTY, to the extent permitted by law.\n"
 	));
 	return code;
 }

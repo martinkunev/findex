@@ -25,11 +25,11 @@ mrproper: clean
 	rm -f src/ffind.c
 
 install: all
-	cp src/findex @{PREFIX}bin/
-	cp src/ffind @{PREFIX}bin/
+	cp src/findex /usr/local/bin/
+	cp src/ffind /usr/local/bin/
 	cp ffind.1.gz /usr/share/man/man1/
 
 uninstall:
-	rm -f @{PREFIX}bin/findex
-	rm -f @{PREFIX}bin/ffind
+	rm -f /usr/local/bin/findex
+	rm -f /usr/local/bin/ffind
 	rm -f /usr/share/man/man1/ffind.1.gz

@@ -19,27 +19,27 @@ for (@ARGV)
 	}
 }
 
-##
+sub generate
+{
+	my ($in, $out, @args) = @_;
 
-open STDOUT, '>', 'src/ffind.c';
-system 'sed', '-e', "s/\@{VERSION}/$version/", 'src/ffind.c.in';
-close STDOUT;
+	open STDOUT, '>', $out;
+	system 'sed', @args, $in;
+	close STDOUT;
+	chmod 0444, $out;
+}
 
-##
+generate 'src/ffind.c', 'src/ffind.c.in', ('-e', "s/\@{VERSION}/$version/");
 
 $prefix .= '/';
 $prefix =~ s|/|\\/|g;
 
-open STDOUT, '>', 'Makefile';
-system 'sed', '-e', "s/\@{PREFIX}/$prefix/", 'Makefile.in';
-close STDOUT;
-
-##
+generate 'Makefile', 'Makefile.in', ('-e', "s/\@{PREFIX}/$prefix/");
 
 #my ($sec, $min, $hour, $mday, $month, $year, $wday, $yday, $dst) = localtime();
 #my @months = qw|January February March April May June July August September October November December|;
 #my $date = "$mday $months[$month] $year";
-my $date = '13 March 2015';
+my $date = '17 March 2015';
 
 open STDOUT, '>', 'ffind.1';
 system 'sed', '-e', "s/\@{DATE}/$date/", '-e', "s/\@{VERSION}/$version/", 'ffind.1.in';

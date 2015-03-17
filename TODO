@@ -17,3 +17,9 @@ findex should work with higher nice
 support multiple search locations for ffind
 
 Document how to put findex in crontab
+
+language-specific non-exact search
+
+support mtime search
+
+http://directory.fsf.org/wiki/Main_Page
