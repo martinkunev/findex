@@ -5,7 +5,7 @@ ffind - indexed search for files in a directory hierarchy
 .SH SYNOPSIS
 \fBffind\fR <path> [FILTERS...] [\fB-exec\fR COMMAND ;]
 .SH DESCRIPTION
-\fBffind\fR searches the database created by findex for files located in <path> that match all the specified filters. For each of the files found, an action is performed.
+\fBffind\fR searches the database created by findex for files located in <path> that match all the specified filters. An action is performed for each of the files found.
 .SH EXPRESSIONS
 .SS FILTERS
 .TP
@@ -41,15 +41,12 @@ named pipe
 socket
 .RE
 .TP
-\fB-size\fR \fIn\fR[cbkKMGT]
-The file has size of \fIn\fR units. Supported units:
+\fB-size\fR \fIn\fR[ckKMGT]
+The file has size of \fIn\fR units. The default unit is bytes. Supported units:
 .RS
 .TP
 `c'
 bytes
-.TP
-`b'
-512-byte blocks (default)
 .TP
 `K'
 kilobytes (1024 bytes)
