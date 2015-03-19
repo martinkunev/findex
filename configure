@@ -19,28 +19,20 @@ for (@ARGV)
 	}
 }
 
-sub generate
-{
-	my ($in, $out, @args) = @_;
-
-	open STDOUT, '>', $out;
-	system 'sed', @args, $in;
-	close STDOUT;
-	chmod 0444, $out;
-}
-
-generate 'src/ffind.c', 'src/ffind.c.in', ('-e', "s/\@{VERSION}/$version/");
+unlink 'src/ffind.c';
+qx(sed -e "s/\@{VERSION}/$version/" src/ffind.c.in > src/ffind.c);
+chmod 0444, 'src/ffind.c';
 
 $prefix .= '/';
 $prefix =~ s|/|\\/|g;
 
-generate 'Makefile', 'Makefile.in', ('-e', "s/\@{PREFIX}/$prefix/");
+unlink 'Makefile';
+qx(sed -e "s/\@{PREFIX}/$prefix/" Makefile.in > Makefile);
+chmod 0444, 'Makefile';
 
 #my ($sec, $min, $hour, $mday, $month, $year, $wday, $yday, $dst) = localtime();
 #my @months = qw|January February March April May June July August September October November December|;
 #my $date = "$mday $months[$month] $year";
 my $date = '17 March 2015';
 
-open STDOUT, '>', 'ffind.1';
-system 'sed', '-e', "s/\@{DATE}/$date/", '-e', "s/\@{VERSION}/$version/", 'ffind.1.in';
-close STDOUT;
+qx(sed -e "s/\@{DATE}/$date/" -e "s/\@{VERSION}/$version/" ffind.1.in > ffind.1);
