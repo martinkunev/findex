@@ -51,7 +51,7 @@ struct pattern
 
 static char *location = 0; // TODO support multiple search locations
 static size_t location_length;
-static uint64_t size_min, size_max;
+static uint64_t size_min = 0, size_max = UINT64_MAX;
 static uint16_t type = 0;
 static struct pattern pattern_path = {0}, pattern_name = {0};
 static size_t exec_index = 0;
@@ -449,11 +449,9 @@ int main(int argc, char *argv[])
 				if (argv[index][0] == '+')
 				{
 					size_min = size * unit;
-					size_max = UINT64_MAX;
 				}
 				else if (argv[index][0] == '-')
 				{
-					size_min = 0;
 					size_max = size * unit;
 				}
 				else
