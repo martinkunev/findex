@@ -12,11 +12,7 @@ Configuration file for findex
 Make it possible to run indexing as a deamon (and use inotify, etc.)
 	maybe don't index when on battery
 
-findex should work with higher nice
-
 support multiple search locations for ffind
-
-Document how to put findex in crontab
 
 language-specific non-exact search
 

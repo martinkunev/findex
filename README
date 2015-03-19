@@ -21,6 +21,8 @@ The database of Filement Index can be useful for the following types of applicat
 * file managers
 * servers that need fast lookup of file information (e.g. http server)
 
+Filement Index is distributed under the terms of the license GNU GPL version 3 <http://gnu.org/licenses/gpl.html>.
+
 -- INSTALL --
 
 $ ./configure
@@ -31,7 +33,7 @@ At the configure step, You can specify --prefix=<path> to configure in order to 
 
 You can use cron to make findex run every once in a while. The following will make findex to be run every night at 4:02 a.m. on the user's home directory:
 $ crontab -e
-2 4 * * * findex "$HOME"
+2 4 * * * nice findex "$HOME"
 
 -- UNINSTALL --
 

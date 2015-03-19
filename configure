@@ -27,7 +27,7 @@ $prefix .= '/';
 $prefix =~ s|/|\\/|g;
 
 unlink 'Makefile';
-qx(sed -e "s/\@{PREFIX}/$prefix/" Makefile.in > Makefile);
+qx(sed -e "s/\@{PREFIX}/$prefix/" -e "s/\@{VERSION}/$version/" Makefile.in > Makefile);
 chmod 0444, 'Makefile';
 
 #my ($sec, $min, $hour, $mday, $month, $year, $wday, $yday, $dst) = localtime();
