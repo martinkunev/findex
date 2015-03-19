@@ -19,7 +19,7 @@ Filement Index is created to solve several problems:
 The database of Filement Index can be useful for the following types of application:
 * search tools
 * file managers
-* servers that need fast lookup of file information (e.g. an http server)
+* servers that need fast lookup of file information (e.g. http server)
 
 -- INSTALL --
 
@@ -27,7 +27,11 @@ $ ./configure
 $ make
 # make install
 
-You can specify --prefix=<path> to configure in order to change the install location (the default is /usr/local/).
+At the configure step, You can specify --prefix=<path> to configure in order to change the install location (the default is /usr/local/).
+
+You can use cron to make findex run every once in a while. The following will make findex to be run every night at 4:02 a.m. on the user's home directory:
+$ crontab -e
+2 4 * * * findex "$HOME"
 
 -- UNINSTALL --
 
