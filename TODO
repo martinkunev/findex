@@ -18,4 +18,6 @@ language-specific non-exact search
 
 support mtime search
 
+implement -maxdepth
+
 http://directory.fsf.org/wiki/Main_Page
