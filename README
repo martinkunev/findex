@@ -7,14 +7,13 @@ ffind - Finds files in the database, based on filtering criteria. Uses interface
 Filement Index is in an early stage of development and a lot of things need improvement. The format of the database will probably change in the future.
 
 Filement Index is created to solve several problems:
-* overcome the problems of tools like locate and slocate
-  - locate is prone to privilege escalation attacks because it runs with SUID
-  - regular users can only use locate's database through locate; this leads to various issues when an application wants to perform indexed search
-  - locate provides only filename information and supports only search by filename
-  - regular users can't update the database of locate
-* provide a database for fast lookup of file information
-	File type must be recognized by file contents. This can be done once and stored in a database for future lookup.
-	If you are interested in the reasoning that led me to that conclusion, read the manifesto.
+overcome the problems of tools like locate and slocate
+- locate is prone to privilege escalation attacks because it runs with SUID
+- regular users can only use locate's database through locate; this leads to various issues when an application wants to perform indexed search
+- locate provides only filename information and supports only search by filename
+- regular users can't update the database of locate
+provide a database for fast lookup of file information
+	File type must be recognized by file contents. This can be done once and stored in a database for future lookup. If you are interested in the reasoning that led me to that conclusion, read the manifesto.
 
 The database of Filement Index can be useful for the following types of application:
 * search tools
@@ -29,7 +28,7 @@ $ ./configure
 $ make
 # make install
 
-At the configure step, You can specify --prefix=<path> to configure in order to change the install location (the default is /usr/local/).
+You can specify --prefix=<path> to configure in order to change the install location (the default is /usr/local/).
 
 You can use cron to make findex run every once in a while. The following will make findex to be run every night at 4:02 a.m. on the user's home directory:
 $ crontab -e
@@ -44,17 +43,17 @@ $ rm ~/.cache/filement
 
 -- USAGE --
 
-First, use findex to create a database with file information. You must specify what directories to be indexed (typically this would be the user's home directory). Depending on the number of file this can take from several seconds to several minutes.
-The database is user-specific. This means that each user must run findex on their files.
+Use findex to create a database with file information. You must specify what directories to be indexed (typically this would be your user's home directory). Depending on the number of files this can take from several seconds to several minutes.
+The database is user-specific. This means that each user must run findex on the files they want indexed.
 You can use cron to make findex run every once in a while (for example every night).
 
-When you want to find files, use ffind. The options of ffind are similar to the options of find. ffind searches only in the database (not in the filesystem). See ffind(1) for more information.
+Once the database exists, you can use ffind to find files in it. The syntax of ffind is similar to that of find. ffind searches only in the database (not in the filesystem). See ffind(1) for more information.
 
 -- NOTES --
 
 For each indexed file, the database stores the following information:
 path	Absolute path to the file.
-mode	Access rights and other information as provided by stat(2).
+mode	Access rights and other information as provided by lstat(2).
 content	Information about file contents.
 mtime	Time of last modification.
 size	File size in bytes.
