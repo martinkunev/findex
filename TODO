@@ -6,6 +6,8 @@ Use a more sophisticated database. Goals:
 	store bigger data (like file preview for images and audio)
 	library providing API to the database
 
+	first step: add indices for fast search; create API
+
 Configuration file for findex
 	indicate what to index
 
