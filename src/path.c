@@ -23,7 +23,6 @@
 
 #include "base.h"
 #include "path.h"
-#include "test/path.h"
 
 #define DB_PATH "/.cache/filement" /* database path relative to the user's home directory */
 

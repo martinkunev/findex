@@ -13,7 +13,7 @@ findex:
 ffind:
 	$(MAKE) -C src $@
 
-check: clean
+check:
 	$(MAKE) -C test check
 
 tar: mrproper

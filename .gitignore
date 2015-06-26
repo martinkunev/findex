@@ -5,6 +5,6 @@
 src/ffind.c
 src/findex
 src/ffind
-test/path
+test/check
 ffind.1
 ffind.1.gz

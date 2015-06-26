@@ -1,12 +1,10 @@
-CFLAGS:=$(CFLAGS) -I../ -DTEST
-LDFLAGS:=$(LDFLAGS) -lcheck
+CFLAGS:=$(CFLAGS) -O2 -I../src/
+LDFLAGS:=$(LDFLAGS) -lcmocka -Wl,--wrap=getcwd,--wrap=free
 
-check: path
-	./path
-
-path: ../src/path.o
+check: check.o ../src/path.o
 	$(CC) $^ $(LDFLAGS) -o $@
+	./check
 
 clean:
 	rm -f *.o
-	rm -f path
+	rm -f check

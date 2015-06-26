@@ -22,4 +22,7 @@ support mtime search
 
 implement -maxdepth
 
+probably * wildcard should not match initial .
+support [] wildcard
+
 http://directory.fsf.org/wiki/Main_Page

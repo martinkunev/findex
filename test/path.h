@@ -17,20 +17,22 @@
  * along with Filement Index.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(TEST)
+#include <stdlib.h>
+#include <string.h>
 
-#include <check.h>
+#include <base.h>
+#include <path.h>
 
-static char test_cwd[PATH_SIZE_LIMIT];
-static size_t test_cwd_size;
-
-#define getcwd(buffer, size) (char *)dupalloc(test_cwd, test_cwd_size)
-
-static void test_set_cwd(void)
+char *__wrap_getcwd(char *buf, size_t size)
 {
-	bytes_define(current, "/home/martin\0");
-	memcpy(test_cwd, current.data, current.size);
-	test_cwd_size = current.size;
+	check_expected(buf);
+	check_expected(size);
+	return (char *)mock();
+}
+
+void __wrap_free(void *ptr)
+{
+	check_expected(ptr);
 }
 
 static void check(const bytes_t *restrict relative, const bytes_t *restrict answer)
@@ -48,69 +50,61 @@ static void check(const bytes_t *restrict relative, const bytes_t *restrict answ
 	memcpy(path[2], canary, sizeof(canary));
 
 	status = normalize(path[1], &path_length, (const char *)relative->data, relative->size); // TODO fix the cast
-	ck_assert_uint_eq(status, 0);
-	ck_assert_uint_eq(path_length, answer->size);
-	ck_assert(!memcmp(path[0], canary, sizeof(canary)));
-	ck_assert(!memcmp(path[1], answer->data, answer->size));
-	ck_assert(!memcmp(path[2], canary, sizeof(canary)));
+	assert_int_equal(status, 0);
+	assert_int_equal(path_length, answer->size);
+	assert_memory_equal(path[0], canary, sizeof(canary));
+	assert_memory_equal(path[1], answer->data, answer->size);
+	assert_memory_equal(path[2], canary, sizeof(canary));
 }
 
-START_TEST(test_normalize_root)
+static void test_normalize_root(void **state)
 {
-	test_set_cwd();
 	bytes_define(relative, "/");
 	bytes_define(answer, "/");
 	check((const bytes_t *)&relative, (const bytes_t *)&answer);
 }
-END_TEST
 
-START_TEST(test_normalize_simple)
+static void test_normalize_simple(void **state)
 {
-	test_set_cwd();
+	const char *directory = "/home/martin";
+
+	expect_value(__wrap_getcwd, buf, (char *)0);
+	expect_value(__wrap_getcwd, size, 0);
+	will_return(__wrap_getcwd, directory);
+
+	expect_value(__wrap_free, ptr, directory);
+
 	bytes_define(relative, "x");
 	bytes_define(answer, "/home/martin/x/");
 	check((const bytes_t *)&relative, (const bytes_t *)&answer);
 }
-END_TEST
 
-START_TEST(test_normalize_current)
+static void test_normalize_current(void **state)
 {
-	test_set_cwd();
+	const char *directory = "/home/martin";
+
+	expect_value(__wrap_getcwd, buf, (char *)0);
+	expect_value(__wrap_getcwd, size, 0);
+	will_return(__wrap_getcwd, directory);
+
+	expect_value(__wrap_free, ptr, directory);
+
 	bytes_define(relative, ".");
 	bytes_define(answer, "/home/martin/");
 	check((const bytes_t *)&relative, (const bytes_t *)&answer);
 }
-END_TEST
 
-START_TEST(test_normalize_parent)
+static void test_normalize_parent(void **state)
 {
-	test_set_cwd();
+	const char *directory = "/home/martin";
+
+	expect_value(__wrap_getcwd, buf, (char *)0);
+	expect_value(__wrap_getcwd, size, 0);
+	will_return(__wrap_getcwd, directory);
+
+	expect_value(__wrap_free, ptr, directory);
+
 	bytes_define(relative, "../dir/");
 	bytes_define(answer, "/home/dir/");
 	check((const bytes_t *)&relative, (const bytes_t *)&answer);
 }
-END_TEST
-
-int main(void)
-{
-	unsigned failed;
-
-	Suite *suite = suite_create("path");
-	TCase *tc;
-
-	tc = tcase_create("normalize");
-	tcase_add_test(tc, test_normalize_root);
-	tcase_add_test(tc, test_normalize_simple);
-	tcase_add_test(tc, test_normalize_current);
-	tcase_add_test(tc, test_normalize_parent);
-	suite_add_tcase(suite, tc);
-
-	SRunner *runner = srunner_create(suite);
-	srunner_set_fork_status(runner, CK_NOFORK);
-	srunner_run_all(runner, CK_VERBOSE);
-	failed = srunner_ntests_failed(runner);
-	srunner_free(runner);
-	return failed;
-}
-
-#endif
