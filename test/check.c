@@ -3,7 +3,6 @@
 #include <setjmp.h>
 #include <cmocka.h>
 
-#include "check.h"
 #include "path.h"
 
 int main(void)

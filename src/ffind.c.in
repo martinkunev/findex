@@ -40,7 +40,7 @@
 
 #define STRING(s) (s), sizeof(s) - 1
 
-#define VERSION "0.1.0-r1"
+#define VERSION "0.1.1"
 
 struct pattern
 {
