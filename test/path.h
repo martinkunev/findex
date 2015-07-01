@@ -68,7 +68,7 @@ static void test_normalize_simple(void **state)
 {
 	const char *directory = "/home/martin";
 
-	expect_value(__wrap_getcwd, buf, (char *)0);
+	expect_value(__wrap_getcwd, buf, 0);
 	expect_value(__wrap_getcwd, size, 0);
 	will_return(__wrap_getcwd, directory);
 
@@ -83,7 +83,7 @@ static void test_normalize_current(void **state)
 {
 	const char *directory = "/home/martin";
 
-	expect_value(__wrap_getcwd, buf, (char *)0);
+	expect_value(__wrap_getcwd, buf, 0);
 	expect_value(__wrap_getcwd, size, 0);
 	will_return(__wrap_getcwd, directory);
 
@@ -98,7 +98,7 @@ static void test_normalize_parent(void **state)
 {
 	const char *directory = "/home/martin";
 
-	expect_value(__wrap_getcwd, buf, (char *)0);
+	expect_value(__wrap_getcwd, buf, 0);
 	expect_value(__wrap_getcwd, size, 0);
 	will_return(__wrap_getcwd, directory);
 
