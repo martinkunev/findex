@@ -1,8 +1,12 @@
 Redesign file content values and handling
 
+command line tool named fstat or ffile
+	shows information about the file from the database; uses the same API that a file manager would
+
 Use a more sophisticated database. Goals:
 	easy modification
 	fast search
+		can be accomplished with an index
 	store bigger data (like file preview for images and audio)
 	library providing API to the database
 
@@ -16,7 +20,7 @@ Make it possible to run indexing as a deamon (and use inotify, etc.)
 
 support multiple search locations for ffind
 
-language-specific non-exact search
+language-specific non-exact search (maybe with libicu)
 
 support mtime search
 

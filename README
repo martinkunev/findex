@@ -1,4 +1,4 @@
-FILEMENT INDEX
+# FILEMENT INDEX
 
 Filement Index is a simple collection of tools for indexed search and file metadata lookup. It uses a file-based database. It consists of two applications:
 findex - Traverses the filesystem and stores file metadata in the database.
@@ -22,7 +22,7 @@ The database of Filement Index can be useful for the following types of applicat
 
 Filement Index is distributed under the terms of the license GNU GPL version 3 <http://gnu.org/licenses/gpl.html>.
 
--- INSTALL --
+## INSTALL
 
 $ ./configure
 $ make
@@ -34,14 +34,14 @@ You can use cron to make findex run every once in a while. The following will ma
 $ crontab -e
 2 4 * * * nice findex "$HOME"
 
--- UNINSTALL --
+## UNINSTALL
 
 # make uninstall
 
 This will leave the Filement Index database. It can be deleted manually from the user's home directory:
 $ rm ~/.cache/filement
 
--- USAGE --
+## USAGE
 
 Use findex to create a database with file information. You must specify what directories to be indexed (typically this would be your user's home directory). Depending on the number of files this can take from several seconds to several minutes.
 The database is user-specific. This means that each user must run findex on the files they want indexed.
@@ -49,7 +49,7 @@ You can use cron to make findex run every once in a while (for example every nig
 
 Once the database exists, you can use ffind to find files in it. The syntax of ffind is similar to that of find. ffind searches only in the database (not in the filesystem). See ffind(1) for more information.
 
--- NOTES --
+## NOTES
 
 For each indexed file, the database stores the following information:
 path	Absolute path to the file.

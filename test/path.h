@@ -1,6 +1,6 @@
 /*
  * Filement Index
- * Copyright (C) 2015  Martin Kunev <martinkunev@gmail.com>
+ * Copyright (C) 2017  Martin Kunev <martinkunev@gmail.com>
  *
  * This file is part of Filement Index.
  *
@@ -35,7 +35,7 @@ void __wrap_free(void *ptr)
 	check_expected(ptr);
 }
 
-static void check(const bytes_t *restrict relative, const bytes_t *restrict answer)
+static void check(const struct bytes *restrict relative, const struct bytes *restrict answer)
 {
 	char path[3][PATH_SIZE_LIMIT];
 	size_t path_length;
@@ -59,9 +59,9 @@ static void check(const bytes_t *restrict relative, const bytes_t *restrict answ
 
 static void test_normalize_root(void **state)
 {
-	bytes_define(relative, "/");
-	bytes_define(answer, "/");
-	check((const bytes_t *)&relative, (const bytes_t *)&answer);
+	struct bytes *relative = bytes("/");
+	struct bytes *answer = bytes("/");
+	check(relative, answer);
 }
 
 static void test_normalize_simple(void **state)
@@ -74,9 +74,9 @@ static void test_normalize_simple(void **state)
 
 	expect_value(__wrap_free, ptr, directory);
 
-	bytes_define(relative, "x");
-	bytes_define(answer, "/home/martin/x/");
-	check((const bytes_t *)&relative, (const bytes_t *)&answer);
+	struct bytes *relative = bytes("x");
+	struct bytes *answer = bytes("/home/martin/x/");
+	check(relative, answer);
 }
 
 static void test_normalize_current(void **state)
@@ -89,9 +89,9 @@ static void test_normalize_current(void **state)
 
 	expect_value(__wrap_free, ptr, directory);
 
-	bytes_define(relative, ".");
-	bytes_define(answer, "/home/martin/");
-	check((const bytes_t *)&relative, (const bytes_t *)&answer);
+	struct bytes *relative = bytes(".");
+	struct bytes *answer = bytes("/home/martin/");
+	check(relative, answer);
 }
 
 static void test_normalize_parent(void **state)
@@ -104,7 +104,7 @@ static void test_normalize_parent(void **state)
 
 	expect_value(__wrap_free, ptr, directory);
 
-	bytes_define(relative, "../dir/");
-	bytes_define(answer, "/home/dir/");
-	check((const bytes_t *)&relative, (const bytes_t *)&answer);
+	struct bytes *relative = bytes("../dir/");
+	struct bytes *answer = bytes("/home/dir/");
+	check(relative, answer);
 }

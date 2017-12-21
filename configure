@@ -33,6 +33,6 @@ chmod 0444, 'Makefile';
 #my ($sec, $min, $hour, $mday, $month, $year, $wday, $yday, $dst) = localtime();
 #my @months = qw|January February March April May June July August September October November December|;
 #my $date = "$mday $months[$month] $year";
-my $date = '17 March 2015';
+my $date = '21 December 2017';
 
 qx(sed -e "s/\@{DATE}/$date/" -e "s/\@{VERSION}/$version/" ffind.1.in > ffind.1);

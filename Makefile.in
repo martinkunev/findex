@@ -1,5 +1,5 @@
 export CC=gcc
-export CFLAGS=-std=c99 -pthread -O2 -fstrict-aliasing -fomit-frame-pointer -D_FILE_OFFSET_BITS=64 -D_BSD_SOURCE -D_DEFAULT_SOURCE -pedantic -Werror -Wstrict-aliasing -Wchar-subscripts -Wimplicit -Wsequence-point -Wcast-align -Wstrict-prototypes -Wno-unused-result
+export CFLAGS=-std=c99 -pthread -O2 -fstrict-aliasing -fomit-frame-pointer -D_FILE_OFFSET_BITS=64 -D_BSD_SOURCE -D_DEFAULT_SOURCE -pedantic -Werror -Wstrict-aliasing -Wchar-subscripts -Wimplicit -Wsequence-point -Wcast-align -Wstrict-prototypes -Wvla -Wno-unused-result
 export LDFLAGS=-pthread
 
 tar_dir=findex-@{VERSION}
@@ -14,7 +14,7 @@ ffind:
 	$(MAKE) -C src $@
 
 check:
-	$(MAKE) -C test check
+	$(MAKE) -C test $@
 
 tar: mrproper
 	mkdir $(tar_dir)
@@ -33,9 +33,9 @@ mrproper: clean
 	rm -f src/ffind.c
 
 install: all
-	cp src/findex @{PREFIX}bin/
-	cp src/ffind @{PREFIX}bin/
-	cp ffind.1.gz /usr/share/man/man1/
+	install -s src/findex @{PREFIX}bin/
+	install -s src/ffind @{PREFIX}bin/
+	install ffind.1.gz /usr/share/man/man1/
 
 uninstall:
 	rm -f @{PREFIX}bin/findex

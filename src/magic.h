@@ -1,6 +1,6 @@
 /*
  * Filement Index
- * Copyright (C) 2015  Martin Kunev <martinkunev@gmail.com>
+ * Copyright (C) 2017  Martin Kunev <martinkunev@gmail.com>
  *
  * This file is part of Filement Index.
  *

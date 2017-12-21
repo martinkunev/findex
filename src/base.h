@@ -1,6 +1,6 @@
 /*
  * Filement Index
- * Copyright (C) 2015  Martin Kunev <martinkunev@gmail.com>
+ * Copyright (C) 2017  Martin Kunev <martinkunev@gmail.com>
  *
  * This file is part of Filement Index.
  *
@@ -77,18 +77,6 @@ static inline void *alloc(size_t size)
 	return buffer;
 }
 
-static inline void *realloc_(void *old, size_t size)
-{
-	void *new = (realloc)(old, size);
-	if (!new)
-	{
-		free(old);
-		abort();
-	}
-	return new;
-}
-#define realloc(buffer, size) realloc_((buffer), (size))
-
 static inline void *dupalloc(void *old, size_t size)
 {
 	void *new = malloc(size);
@@ -99,27 +87,17 @@ static inline void *dupalloc(void *old, size_t size)
 
 ////////////////
 
-typedef struct
+#include <stddef.h>
+#include <stdio.h>
+
+// WARNING: This code requires compiler support for __attribute__((aligned())).
+
+//#define STATIC_ASSERT(predicate, message) extern int assert_##message[predicate ? 1 : -1];
+
+struct bytes
 {
 	size_t size;
 	unsigned char data[];
-} bytes_t;
+} __attribute__((aligned(1)));
 
-#define bytes_t(n) struct \
-	{ \
-		size_t size; \
-		char data[n]; \
-	}
-
-#define bytes(value) {sizeof(value) - 1, value}
-
-#define bytes_define(variable, value) bytes_t(sizeof(value) - 1) variable = bytes(value)
-
-// TODO ? make static assert for offsetof(..., data) as this ensures the struct is compatible with bytes_t
-#define bytes_p(s) (bytes_t *)&( \
-		struct \
-		{ \
-			size_t size; \
-			char data[sizeof(s) - 1]; \
-		} \
-	){sizeof(s) - 1, (s)}
+#define bytes(init) &((union {struct {size_t size; unsigned char data[sizeof(init)];} __attribute__((aligned(1))) _; struct bytes bytes;}){sizeof(init) - 1, init}).bytes
