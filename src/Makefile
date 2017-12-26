@@ -1,4 +1,4 @@
-CFLAGS:=$(CFLAGS) -I../
+CFLAGS:=$(CFLAGS) -I../ -DOS_LINUX
 
 all: findex ffind
 
