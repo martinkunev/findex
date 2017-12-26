@@ -87,7 +87,10 @@ static int db_insert(int db, char *path, size_t path_length, const struct stat *
 static int db_index(int db, char *path, size_t path_length)
 {
 	DIR *dir;
-	struct dirent *entry, *more;
+	struct dirent *entry;
+#if !defined(READDIR)
+	struct dirent *more;
+#endif
 	struct stat info;
 
 	const char *name;
@@ -102,8 +105,6 @@ static int db_index(int db, char *path, size_t path_length)
 	}
 	path[path_length] = 0;
 
-	entry = alloc(offsetof(struct dirent, d_name) + pathconf(path, _PC_NAME_MAX) + 1);
-
 	dir = opendir(path);
 	if (!dir)
 	{
@@ -111,20 +112,20 @@ static int db_index(int db, char *path, size_t path_length)
 		switch (errno)
 		{
 		case EACCES:
-			break;
+			return 0;
 
 		default:
 			return -1;
 		}
 	}
 
-	// TODO use readdir with glibc
+	entry = alloc(offsetof(struct dirent, d_name) + pathconf(path, _PC_NAME_MAX) + 1);
 
 	while (1)
 	{
 #if defined(READDIR)
 		errno = 0;
-        if (!(entry = readdir(dir)))
+		if (!(entry = readdir(dir)))
 		{
 			if (errno)
 				return -1; // TODO error
@@ -182,7 +183,9 @@ static int db_index(int db, char *path, size_t path_length)
 
 finally:
 	closedir(dir);
+#if !defined(READDIR)
 	free(entry);
+#endif
 
 	return status;
 }
