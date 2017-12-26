@@ -23,46 +23,48 @@
 #include "arch.h"
 #include "magic.h"
 
-// WARNING: Files < 16B are never considered as binary
+// WARNING: Files < 16B are never considered binary
 
 //#define type_mask 0x00007f00
 
-//static uint32_t type_ar		= 0x00028000;
-static uint32_t type_tar		= 0x00028100;
-static uint32_t type_zip		= 0x0002c000;
-static uint32_t type_rar		= 0x0002c100;
+//static const uint32_t type_ar			= 0x00028000;
+static const uint32_t type_tar			= 0x00028100;
+static const uint32_t type_zip			= 0x0002c000;
+static const uint32_t type_rar			= 0x0002c100;
+static const uint32_t type_7zip			= 0x0002c200;
 
-// WARNING: Files compressed with gzip or bzip2 are treated as tar archives.
-static uint32_t type_gzip		= 0x00028100;
-static uint32_t type_bzip2		= 0x00028100;
+// WARNING: Files compressed with gzip, bzip2 or xz are treated as tar archives.
+static const uint32_t type_gzip			= 0x00028100;
+static const uint32_t type_bzip2		= 0x00028100;
+static const uint32_t type_xz			= 0x00028100;
 
 // TODO openoffice
-static uint32_t type_djvu		= 0x00048100;
-static uint32_t type_pdf		= 0x0004c000;
-static uint32_t type_msword		= 0x0004c100;
+static const uint32_t type_djvu			= 0x00048100;
+static const uint32_t type_pdf			= 0x0004c000;
+static const uint32_t type_msword		= 0x0004c100;
 
-static uint32_t type_png		= 0x00058000;
-static uint32_t type_jpeg		= 0x00058100;
-static uint32_t type_gif		= 0x0005a000;
-static uint32_t type_bmp		= 0x0005c000;
+static const uint32_t type_png			= 0x00058000;
+static const uint32_t type_jpeg			= 0x00058100;
+static const uint32_t type_gif			= 0x0005a000;
+static const uint32_t type_bmp			= 0x0005c000;
 
-static uint32_t type_mpegaudio	= 0x00088000;
+static const uint32_t type_mpegaudio	= 0x00088000;
 
-static uint32_t type_mpegvideo	= 0x00098000;
+static const uint32_t type_mpegvideo	= 0x00098000;
 
-static uint32_t type_ogg		= 0x000c8000; // TODO vorbis/theora in last byte
-static uint32_t type_matroska	= 0x000c8100; // TODO regular/webm in last byte
-static uint32_t type_wave		= 0x000cc000;
-static uint32_t type_avi		= 0x000cc001;
-static uint32_t type_asf		= 0x000cc100; // TODO wma/wmv in last byte
-static uint32_t type_quicktime	= 0x000cc200;
-static uint32_t type_mpeg4		= 0x000cc201;
-static uint32_t type_m4audio	= 0x000cc202;
-static uint32_t type_m4video	= 0x000cc203;
-static uint32_t type_3gpp		= 0x000cc204;
+static const uint32_t type_ogg			= 0x000c8000; // TODO vorbis/theora in last byte
+static const uint32_t type_matroska		= 0x000c8100; // TODO regular/webm in last byte
+static const uint32_t type_wave			= 0x000cc000;
+static const uint32_t type_avi			= 0x000cc001;
+static const uint32_t type_asf			= 0x000cc100; // TODO wma/wmv in last byte
+static const uint32_t type_quicktime	= 0x000cc200;
+static const uint32_t type_mpeg4		= 0x000cc201;
+static const uint32_t type_m4audio		= 0x000cc202;
+static const uint32_t type_m4video		= 0x000cc203;
+static const uint32_t type_3gpp			= 0x000cc204;
 
-static uint32_t type_text		= 0xff000000; // TODO change this
-static uint32_t type_unknown	= 0x00ff0000;
+static const uint32_t type_text			= 0xff000000; // TODO change this
+static const uint32_t type_unknown		= 0x00ff0000;
 
 // This library uses big endian as internal format.
 
@@ -318,6 +320,25 @@ Check whether bytes 0-2 match and the first 4 bits of byte 3 match (all ASCII di
 #define BZIP2_MAGIC_0_3					sign4('B', 'Z', 'h', '0' & 0xf0)
 
 
+/* TODO file size
+Xz					application/x-xz
+https://tukaani.org/xz/xz-file-format.txt
+bytes 0-5		header magic bytes		fd377a585a00
+*/
+#define XZ_MASK_0_7						0xffffffffffff0000llu
+#define XZ_MAGIC_0_7					sign8(0xfd, 0x37, 0x7a, 0x58, 0x5a, 0, 0, 0)
+
+
+/* TODO file size
+7-Zip				application/x-7z-compressed
+http://cpansearch.perl.org/src/BJOERN/Compress-Deflate7-1.0/7zip/DOC/7zFormat.txt
+bytes 0-1		signature				"7z"
+bytes 2-5		signature				bcaf271c
+*/
+#define ZIP7_MASK_0_7					0xffffffffffff0000llu
+#define ZIP7_MAGIC_0_7					sign8('7', 'z', 0xbc, 0xaf, 0x27, 0x1c, 0, 0)
+
+
 /* TODO better detection
 tar					application/x-tar
 http://www.gnu.org/software/tar/manual/html_node/Standard.html
@@ -335,8 +356,7 @@ bytes 0-3:		magic					"GMI2"
 //#define MAGIC_DMG_0_3			SIGNATURE_4("GMI2")
 //uint32_t MAGIC_DMG = STRING("application/x-apple-diskimage");
 
-// TODO: more formats: 
-//  odf, tar.gz, tar.bz2, tar.xz, iso, executables, rtf, tex, dmg
+
 // TODO: recognize different msoffice formats
 // TODO: different text files:
 //  <?php <?xml #! <! <html %!
@@ -488,6 +508,12 @@ uint32_t content(const unsigned char *magic, size_t size)
 
 	if ((bytes_0_3 & BZIP2_MASK_0_3) == BZIP2_MAGIC_0_3)
 		return type_bzip2;
+
+	if ((bytes_0_7 & XZ_MASK_0_7) == XZ_MAGIC_0_7)
+		return type_xz;
+
+	if ((bytes_0_7 & ZIP7_MASK_0_7) == ZIP7_MAGIC_0_7)
+		return type_7zip;
 
 	// other formats
 
