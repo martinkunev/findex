@@ -18,6 +18,7 @@
  */
 
 #include <dirent.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -25,6 +26,10 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#if defined(__GLIBC__) && (((__GLIBC__ == 2) && (__GLIBC_MINOR__ >= 24)) || (__GLIBC__ > 2))
+# define READDIR
+#endif
 
 #include "base.h"
 #include "arch.h"
@@ -100,12 +105,38 @@ static int db_index(int db, char *path, size_t path_length)
 	entry = alloc(offsetof(struct dirent, d_name) + pathconf(path, _PC_NAME_MAX) + 1);
 
 	dir = opendir(path);
-	if (!dir) return -1; // TODO better error
+	if (!dir)
+	{
+		// TODO better error handling
+		switch (errno)
+		{
+		case EACCES:
+			break;
+
+		default:
+			return -1;
+		}
+	}
+
+	// TODO use readdir with glibc
 
 	while (1)
 	{
-		if (readdir_r(dir, entry, &more)) return -1; // TODO error
-		if (!more) break; // no more entries
+#if defined(READDIR)
+		errno = 0;
+        if (!(entry = readdir(dir)))
+		{
+			if (errno)
+				return -1; // TODO error
+			else
+				break; // no more entries
+		}
+#else
+		if (readdir_r(dir, entry, &more))
+			return -1; // TODO error
+		if (!more)
+			break; // no more entries
+#endif
 
 		// skip . and ..
 		if ((entry->d_name[0] == '.') && (!entry->d_name[1] || ((entry->d_name[1] == '.') && !entry->d_name[2])))
