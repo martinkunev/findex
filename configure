@@ -4,7 +4,8 @@ use strict;
 use warnings;
 
 my $prefix = '/usr/local';
-my $version = '0.1.0';
+my $version = '0.1.1';
+my $debug = 0;
 
 for (@ARGV)
 {
@@ -12,9 +13,17 @@ for (@ARGV)
 	{
 		$prefix = $1;
 	}
+	elsif (/^--debug/)
+	{
+		$debug = 1;
+	}
 	else
 	{
-		print "Usage: $0 [OPTION ...]\n\t--prefix=<prefix>    \tspecify install location (default /usr/local)\n";
+		print
+"Usage: $0 [OPTION ...]
+	--prefix=<prefix>   specify install location (default /usr/local)
+	--debug             compile for debugging
+";
 		exit;
 	}
 }
@@ -26,8 +35,10 @@ chmod 0444, 'src/ffind.c';
 $prefix .= '/';
 $prefix =~ s|/|\\/|g;
 
+my $cflags = ($debug ? '-O0 -g' : '-O2 -fstrict-aliasing -fomit-frame-pointer');
+
 unlink 'Makefile';
-qx(sed -e "s/\@{PREFIX}/$prefix/" -e "s/\@{VERSION}/$version/" Makefile.in > Makefile);
+qx(sed -e "s/\@{PREFIX}/$prefix/g" -e "s/\@{VERSION}/$version/g" -e "s/\@{CFLAGS}/$cflags/g" Makefile.in > Makefile);
 chmod 0444, 'Makefile';
 
 #my ($sec, $min, $hour, $mday, $month, $year, $wday, $yday, $dst) = localtime();

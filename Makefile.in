@@ -1,5 +1,5 @@
 export CC=gcc
-export CFLAGS=-std=c99 -pthread -O2 -fstrict-aliasing -fomit-frame-pointer -D_FILE_OFFSET_BITS=64 -D_BSD_SOURCE -D_DEFAULT_SOURCE -pedantic -Werror -Wstrict-aliasing -Wchar-subscripts -Wimplicit -Wsequence-point -Wcast-align -Wstrict-prototypes -Wvla -Wno-unused-result
+export CFLAGS=-std=c99 -pthread @{CFLAGS} -D_FILE_OFFSET_BITS=64 -D_BSD_SOURCE -D_DEFAULT_SOURCE -pedantic -Werror -Wstrict-aliasing -Wchar-subscripts -Wimplicit -Wsequence-point -Wcast-align -Wstrict-prototypes -Wvla -Wno-unused-result
 export LDFLAGS=-pthread
 
 tar_dir=findex-@{VERSION}
