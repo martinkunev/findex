@@ -41,15 +41,16 @@
 
 #define STRING(s) (s), sizeof(s) - 1
 
-// TODO i don't follow symbolic links; is this okay?
+// TODO i don't follow symbolic links; is this okay? - it is not
 
 static int db_insert(int db, char *path, size_t path_length, const struct stat *restrict info)
 {
 	struct file file;
 	uint16_t length = path_length;
 
-	endian_big16(&file.mode, &info->st_mode); // TODO is this right?
 	endian_big16(&file.path_length, &length);
+	file.content = 0;
+	file.mime_type = 0;
 	endian_big64(&file.mtime, &info->st_mtime);
 	endian_big64(&file.size, &info->st_size);
 
@@ -66,12 +67,11 @@ static int db_insert(int db, char *path, size_t path_length, const struct stat *
 
 			if (size >= 0)
 			{
-				uint32_t file_content = content(buffer, size);
-				endian_big32(&file.content, &file_content);
+				enum type type = content(buffer, size);
+				file.content |= htobe16(typeinfo[type].content);
+				endian_big32(&file.mime_type, typeinfo[type].mime_type);
 			}
-			else file.content = 0;
 		}
-		else file.content = 0;
 	}
 
 	if (write(db, &file, sizeof(file)) < 0) return -1; // TODO

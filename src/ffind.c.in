@@ -314,11 +314,11 @@ static int find(const unsigned char *db, size_t dbsize, int (*callback)(const ch
 		// if (path[0] != '/') ;
 		offset += file.path_length;
 
-		raw = file.mode;
-		endian_big16(&file.mode, &raw);
+		raw = file.content;
+		endian_big16(&file.content, &raw);
 
-		raw32 = file.content;
-		endian_big32(&file.content, &raw32);
+		raw32 = file.mime_type;
+		endian_big32(&file.mime_type, &raw32);
 
 		raw64 = file.mtime;
 		endian_big64(&file.mtime, &raw64);
@@ -326,11 +326,13 @@ static int find(const unsigned char *db, size_t dbsize, int (*callback)(const ch
 		raw64 = file.size;
 		endian_big64(&file.size, &raw64);
 
+		// TODO type filter
+
 		// Apply the filters.
 		if ((file.path_length < location_length) || memcmp(path, location, location_length)) continue;
 		if ((file.size < size_min) || (size_max < file.size)) continue;
-		if (type && ((file.mode & S_IFMT) != type)) continue;
-		if (filecontent && ((file.content >> 16) != (filecontent >> 16))) continue;
+		//if (type && ((file.mode & S_IFMT) != type)) continue;
+		if (filecontent && !(file.content & filecontent)) continue;
 		if (pattern_path.data && !match(&pattern_path, path, file.path_length)) continue;
 		if (pattern_name.data)
 		{
@@ -483,19 +485,19 @@ int main(int argc, char *argv[])
 				if (++index == argc) return usage(1);
 
 				if (!memcmp(argv[index], STRING("text")))
-					filecontent = content_text;
+					filecontent = CONTENT_TEXT;
 				else if (!memcmp(argv[index], STRING("archive")))
-					filecontent = content_archive;
+					filecontent = CONTENT_ARCHIVE;
 				else if (!memcmp(argv[index], STRING("document")))
-					filecontent = content_document;
+					filecontent = CONTENT_DOCUMENT;
 				else if (!memcmp(argv[index], STRING("image")))
-					filecontent = content_image;
+					filecontent = CONTENT_IMAGE;
 				else if (!memcmp(argv[index], STRING("audio")))
-					filecontent = content_audio;
+					filecontent = CONTENT_AUDIO;
 				else if (!memcmp(argv[index], STRING("video")))
-					filecontent = content_video;
-				else if (!memcmp(argv[index], STRING("multimedia")))
-					filecontent = content_multimedia;
+					filecontent = CONTENT_VIDEO;
+				else if (!memcmp(argv[index], STRING("database")))
+					filecontent = CONTENT_DATABASE;
 				else
 					return usage(1);
 			}

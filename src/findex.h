@@ -21,9 +21,9 @@
 
 struct file
 {
-	uint16_t mode;
 	uint16_t path_length;
-	uint32_t content;
+	uint16_t content;
+	uint32_t mime_type;
 	uint64_t mtime;
     uint64_t size;
-};
+} __attribute__((packed));

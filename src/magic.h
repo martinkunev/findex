@@ -19,12 +19,29 @@
 
 #define MAGIC_SIZE 16
 
-#define content_text		0xff000000
-#define content_archive		0x00020000
-#define content_document	0x00040000
-#define content_image		0x00050000
-#define content_audio		0x00080000
-#define content_video		0x00090000
-#define content_multimedia	0x000c0000
+enum
+{
+	CONTENT_DIRECTORY = 0x1,
+	CONTENT_LINK = 0x2,
+	CONTENT_SPECIAL = 0x4,
+	CONTENT_EXECUTABLE = 0x8,
+	CONTENT_TEXT = 0x10,
+	CONTENT_ARCHIVE = 0x20,
+	CONTENT_DOCUMENT = 0x40,
+	CONTENT_IMAGE = 0x80,
+	CONTENT_AUDIO = 0x100,
+	CONTENT_VIDEO = 0x200,
+	CONTENT_DATABASE = 0x400,
+};
 
-uint32_t content(const unsigned char *magic, size_t size);
+struct filetype
+{
+	uint16_t content;
+	const struct bytes *mime_type;
+};
+
+extern const struct filetype typeinfo[];
+
+enum type {TYPE_UNKNOWN, TYPE_TAR, TYPE_ZIP, TYPE_RAR, TYPE_7ZIP, TYPE_GZIP, TYPE_BZIP2, TYPE_XZ, TYPE_DJVU, TYPE_PDF, TYPE_MSWORD, TYPE_PNG, TYPE_JPEG, TYPE_GIF, TYPE_BMP, TYPE_MPEGAUDIO, TYPE_MPEGVIDEO, TYPE_OGG, TYPE_MATROSKA, TYPE_WAVE, TYPE_AVI, TYPE_ASF, TYPE_QUICKTIME, TYPE_MPEG4, TYPE_M4AUDIO, TYPE_M4VIDEO, TYPE_3GPP, TYPE_TEXT};
+
+enum type content(const unsigned char *magic, size_t size);

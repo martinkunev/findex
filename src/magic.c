@@ -18,53 +18,14 @@
  */
 
 #include <inttypes.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "arch.h"
+#include "base.h"
 #include "magic.h"
 
 // WARNING: Files < 16B are never considered binary
-
-//#define type_mask 0x00007f00
-
-//static const uint32_t type_ar			= 0x00028000;
-static const uint32_t type_tar			= 0x00028100;
-static const uint32_t type_zip			= 0x0002c000;
-static const uint32_t type_rar			= 0x0002c100;
-static const uint32_t type_7zip			= 0x0002c200;
-
-// WARNING: Files compressed with gzip, bzip2 or xz are treated as tar archives.
-static const uint32_t type_gzip			= 0x00028100;
-static const uint32_t type_bzip2		= 0x00028100;
-static const uint32_t type_xz			= 0x00028100;
-
-// TODO openoffice
-static const uint32_t type_djvu			= 0x00048100;
-static const uint32_t type_pdf			= 0x0004c000;
-static const uint32_t type_msword		= 0x0004c100;
-
-static const uint32_t type_png			= 0x00058000;
-static const uint32_t type_jpeg			= 0x00058100;
-static const uint32_t type_gif			= 0x0005a000;
-static const uint32_t type_bmp			= 0x0005c000;
-
-static const uint32_t type_mpegaudio	= 0x00088000;
-
-static const uint32_t type_mpegvideo	= 0x00098000;
-
-static const uint32_t type_ogg			= 0x000c8000; // TODO vorbis/theora in last byte
-static const uint32_t type_matroska		= 0x000c8100; // TODO regular/webm in last byte
-static const uint32_t type_wave			= 0x000cc000;
-static const uint32_t type_avi			= 0x000cc001;
-static const uint32_t type_asf			= 0x000cc100; // TODO wma/wmv in last byte
-static const uint32_t type_quicktime	= 0x000cc200;
-static const uint32_t type_mpeg4		= 0x000cc201;
-static const uint32_t type_m4audio		= 0x000cc202;
-static const uint32_t type_m4video		= 0x000cc203;
-static const uint32_t type_3gpp			= 0x000cc204;
-
-static const uint32_t type_text			= 0xff000000; // TODO change this
-static const uint32_t type_unknown		= 0x00ff0000;
 
 // This library uses big endian as internal format.
 
@@ -88,8 +49,6 @@ TODO: what we need to know for a file
 - could it be tar (or compressed tar)
 - is it text file
 */
-
-// TODO: better tar detection
 
 
 /* TODO file size
@@ -284,7 +243,7 @@ bytes 0-3:		signature				04034b50 || 06054b50 || 08074b50
 #define ZIP_MAGIC_SPLIT_0_3				0x504b0708
 
 /* TODO valid text
-RAR
+RAR					application/vnd.rar
 http://en.wikipedia.org/wiki/RAR
 Minimum size is 20B
 bytes 0-3:		signature				"Rar!"
@@ -300,7 +259,7 @@ bytes 0-3:		magic					"%PDF"
 
 
 /* TODO file size
-GZip
+GZip				application/gzip
 http://www.gzip.org/zlib/rfc-gzip.html
 File starts with 2 identification bytes.
 bytes 0-1								1f8b
@@ -382,8 +341,52 @@ static const unsigned char utf8[] = {
 };
 #define UTF8_INVALID 0xff
 
+const struct filetype typeinfo[] =
+{
+	// TODO ar
+	// TODO: better tar detection
+	[TYPE_TAR] = {CONTENT_ARCHIVE | CONTENT_DIRECTORY, bytes("application/x-tar")},
+	[TYPE_ZIP] = {CONTENT_ARCHIVE | CONTENT_DIRECTORY, bytes("application/zip")},
+	[TYPE_RAR] = {CONTENT_ARCHIVE, bytes("application/vnd.rar")},
+	[TYPE_7ZIP] = {CONTENT_ARCHIVE, bytes("application/x-7z-compressed")},
+
+	// WARNING: Files compressed with gzip, bzip2 or xz are treated as tar archives.
+	[TYPE_GZIP] = {CONTENT_ARCHIVE | CONTENT_DIRECTORY, bytes("application/gzip")},
+	[TYPE_BZIP2] = {CONTENT_ARCHIVE, bytes("application/x-bzip2")},
+	[TYPE_XZ] = {CONTENT_ARCHIVE, bytes("application/x-xz")},
+
+	// TODO openoffice
+	[TYPE_DJVU] = {CONTENT_DOCUMENT, bytes("image/vnd.djvu")},
+	[TYPE_PDF] = {CONTENT_DOCUMENT, bytes("application/pdf")},
+	[TYPE_MSWORD] = {CONTENT_DOCUMENT, bytes("application/msword")}, // TODO this could be any msoffice document
+
+	[TYPE_PNG] = {CONTENT_IMAGE, bytes("image/png")},
+	[TYPE_JPEG] = {CONTENT_IMAGE, bytes("image/jpeg")},
+	[TYPE_GIF] = {CONTENT_IMAGE | CONTENT_VIDEO, bytes("image/gif")}, // TODO not all gifs are animated
+	[TYPE_BMP] = {CONTENT_IMAGE, bytes("image/x-bmp")},
+
+	[TYPE_MPEGAUDIO] = {CONTENT_AUDIO, bytes("audio/mpeg")},
+
+	[TYPE_MPEGVIDEO] = {CONTENT_AUDIO | CONTENT_VIDEO, bytes("video/mpeg")},
+
+	[TYPE_OGG] = {CONTENT_AUDIO, bytes("application/ogg")}, // TODO could be vorbis/theora
+	[TYPE_MATROSKA] = {CONTENT_AUDIO | CONTENT_VIDEO, bytes("video/x-matroska")}, // TODO could be regular/webm
+	[TYPE_WAVE] = {CONTENT_AUDIO, bytes("audio/wave")},
+	[TYPE_AVI] = {CONTENT_AUDIO | CONTENT_VIDEO, bytes("video/avi")},
+	[TYPE_ASF] = {CONTENT_AUDIO | CONTENT_VIDEO, bytes("application/vnd.ms-asf")}, // TODO could be wma/wmv
+	[TYPE_QUICKTIME] = {CONTENT_AUDIO | CONTENT_VIDEO, bytes("video/quicktime")},
+	[TYPE_MPEG4] = {CONTENT_AUDIO | CONTENT_VIDEO, bytes("video/mp4")},
+	[TYPE_M4AUDIO] = {CONTENT_AUDIO, bytes("audio/x-m4a")},
+	[TYPE_M4VIDEO] = {CONTENT_AUDIO | CONTENT_VIDEO, bytes("video/x-m4v")},
+	[TYPE_3GPP] = {CONTENT_AUDIO | CONTENT_VIDEO, bytes("video/3gpp")},
+
+	[TYPE_TEXT] = {CONTENT_TEXT, bytes("text/plain")},
+
+	[TYPE_UNKNOWN] = {0, bytes("application/octet-stream")},
+};
+
 // Treat files that start with ASCII characters and continue with NULs as tar archives.
-static uint32_t content_unknown(const unsigned char *restrict magic, size_t size)
+static enum type content_unknown(const unsigned char *restrict magic, size_t size)
 {
 	const unsigned char *start = magic, *end;
 	unsigned type;
@@ -399,22 +402,22 @@ static uint32_t content_unknown(const unsigned char *restrict magic, size_t size
 			{
 				while (!*start)
 					if (++start >= (magic + 100))
-						return type_tar;
+						return TYPE_TAR;
 			}
-			return type_unknown;
+			return TYPE_UNKNOWN;
 		}
 
 		// There should be type number of bytes, starting with 10 bits after the first byte.
 		while (type--)
 			if ((++start == end) || ((*start & 0xc0) != 0x80))
-				return type_unknown;
+				return TYPE_UNKNOWN;
 	}
 
-	return type_text;
+	return TYPE_TEXT;
 }
 
 // WARNING: When size is less than 16, this function considers that this is the size of the whole file.
-uint32_t content(const unsigned char *magic, size_t size)
+enum type content(const unsigned char *magic, size_t size)
 {
 	if (size < MAGIC_SIZE) return content_unknown(magic, size); // most likely a text file
 
@@ -428,16 +431,16 @@ uint32_t content(const unsigned char *magic, size_t size)
 	// image
 
 	if ((bytes_0_3 & JPEG_MASK_0_3) == JPEG_MAGIC_0_3)
-		return type_jpeg;
+		return TYPE_JPEG;
 
 	if (bytes_0_7 == PNG_MAGIC_0_7)
-		return type_png;
+		return TYPE_PNG;
 
 	switch (bytes_0_7 & GIF_MASK_0_7) // GIF
 	{
 	case GIF_87_MAGIC_0_7:
 	case GIF_89_MAGIC_0_7:
-		return type_gif;
+		return TYPE_GIF;
 	}
 
 	// audio/video
@@ -447,49 +450,49 @@ uint32_t content(const unsigned char *magic, size_t size)
 		switch (bytes_8_15 >> 32)
 		{
 		case QTFF_QUICKTIME:
-			return type_quicktime;
+			return TYPE_QUICKTIME;
 		case QTFF_MPEG4_0:
 		case QTFF_MPEG4_1:
 		case QTFF_MPEG4_2:
 		case QTFF_MPEG4_3:
 		case QTFF_MPEG4_4:
-			return type_mpeg4;
+			return TYPE_MPEG4;
 		case QTFF_M4AUDIO:
-			return type_m4audio;
+			return TYPE_M4AUDIO;
 		case QTFF_M4VIDEO:
-			return type_m4video;
+			return TYPE_M4VIDEO;
 		case QTFF_3GPP_0:
 		case QTFF_3GPP_1:
 		case QTFF_3GPP_2:
-			return type_3gpp;
+			return TYPE_3GPP;
 		}
 	}
 
 	if (bytes_0_3 == MATROSKA_0_3)
-		return type_matroska;
+		return TYPE_MATROSKA;
 
 	if (((bytes_0_1 & MPEGAUDIO_MASK_0_1) == MP3_MAGIC_0_1) || ((bytes_0_1 & MPEGAUDIO_MASK_0_1) == MP2_MAGIC_0_1) || ((bytes_0_3 & ID3v2_MASK_0_3) == ID3v2_MAGIC_0_3) || (!bytes_0_7 && !bytes_8_15))
-		return type_mpegaudio;
+		return TYPE_MPEGAUDIO;
 
 	if (bytes_0_3 == MPEGVIDEO_0_3)
-		return type_mpegvideo;
+		return TYPE_MPEGVIDEO;
 
 	if ((bytes_0_3 == OGG_MAGIC_0_3) && (magic[4] == OGG_MAGIC_4))
-		return type_ogg;
+		return TYPE_OGG;
 
 	if (bytes_0_3 == RIFF_MAGIC_0_3)
 	{
 		switch (bytes_8_15 >> 32)
 		{
 		case RIFF_WAVE:
-			return type_wave;
+			return TYPE_WAVE;
 		case RIFF_AVI:
-			return type_avi;
+			return TYPE_AVI;
 		}
 	}
 
 	if ((bytes_0_7 == ASF_MAGIC_0_7) && (bytes_8_15 == ASF_MAGIC_8_15))
-		return type_asf;
+		return TYPE_ASF;
 
 	// archive
 
@@ -498,36 +501,36 @@ uint32_t content(const unsigned char *magic, size_t size)
 	case ZIP_MAGIC_FILE_0_3:
 	case ZIP_MAGIC_SPLIT_0_3:
 	case ZIP_MAGIC_EMPTY_0_3:
-		return type_zip;
+		return TYPE_ZIP;
 	case RAR_MAGIC_0_3:
-		return type_rar;
+		return TYPE_RAR;
 	}
 
 	if (bytes_0_1 == GZIP_MAGIC_0_1)
-		return type_gzip;
+		return TYPE_GZIP;
 
 	if ((bytes_0_3 & BZIP2_MASK_0_3) == BZIP2_MAGIC_0_3)
-		return type_bzip2;
+		return TYPE_BZIP2;
 
 	if ((bytes_0_7 & XZ_MASK_0_7) == XZ_MAGIC_0_7)
-		return type_xz;
+		return TYPE_XZ;
 
 	if ((bytes_0_7 & ZIP7_MASK_0_7) == ZIP7_MAGIC_0_7)
-		return type_7zip;
+		return TYPE_7ZIP;
 
 	// other formats
 
 	if (bytes_0_3 == PDF_MAGIC_0_3)
-		return type_pdf;
+		return TYPE_PDF;
 
 	if (bytes_0_7 == OLECF_MAGIC_0_7)
-		return type_msword;
+		return TYPE_MSWORD;
 
 	if (bytes_0_7 == DJVU_MAGIC_0_7)
-		return type_djvu;
+		return TYPE_DJVU;
 
 	if ((bytes_0_1 == BMP_MAGIC_0_1) && ((bytes_0_7 >> 16) & 0xffffffff >= 26))
-		return type_bmp;
+		return TYPE_BMP;
 
 	return content_unknown(magic, size);
 }
