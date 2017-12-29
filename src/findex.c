@@ -41,28 +41,38 @@
 
 #define STRING(s) (s), sizeof(s) - 1
 
-// TODO i don't follow symbolic links; is this okay? - it is not
-
 static int db_insert(int db, char *path, size_t path_length, const struct stat *restrict info)
 {
-	struct file file;
+	struct stat hardlink_info;
+	struct file file = {0};
 	uint16_t length = path_length;
 
-	endian_big16(&file.path_length, &length);
-	file.content = 0;
-	file.mime_type = 0;
-	endian_big64(&file.mtime, &info->st_mtime);
-	endian_big64(&file.size, &info->st_size);
-
+	// If the file is a soft link, stat information about what it points to.
+	if (S_ISLNK(info->st_mode))
 	{
-		ssize_t size;
-		unsigned char buffer[MAGIC_SIZE];
+		if (stat(path, &hardlink_info) < 0)
+			return 0; // TODO report this error; is it okay if I ignore the file?
+		info = &hardlink_info;
+
+		file.content |= CONTENT_LINK;
+	}
+
+	switch (info->st_mode & S_IFMT)
+	{
 		int entry;
 
+	case S_IFDIR:
+		file.content |= CONTENT_DIRECTORY;
+		break;
+
+	case S_IFREG:
+		// TODO report open and read errors
 		entry = open(path, O_RDONLY);
 		if (entry >= 0)
 		{
-			size = read(entry, &buffer, MAGIC_SIZE);
+			unsigned char buffer[MAGIC_SIZE];
+			ssize_t size = read(entry, &buffer, MAGIC_SIZE);
+
 			close(entry);
 
 			if (size >= 0)
@@ -72,7 +82,16 @@ static int db_insert(int db, char *path, size_t path_length, const struct stat *
 				endian_big32(&file.mime_type, typeinfo[type].mime_type);
 			}
 		}
+		break;
+
+	default:
+		file.content |= CONTENT_SPECIAL;
+		break;
 	}
+
+	endian_big16(&file.path_length, &length);
+	endian_big64(&file.mtime, &info->st_mtime);
+	endian_big64(&file.size, &info->st_size);
 
 	if (write(db, &file, sizeof(file)) < 0) return -1; // TODO
 	if (write(db, path, path_length) < 0) return -1; // TODO
@@ -161,14 +180,12 @@ static int db_index(int db, char *path, size_t path_length)
 
 		if (lstat(path, &info) < 0) return -1; // TODO error
 
-		mode_t mode = info.st_mode & S_IFMT;
-
-		if ((mode == S_IFDIR) || (mode == S_IFREG))
-			if (db_insert(db, path, path_length, &info))
-				return -1; // TODO error
+		status = db_insert(db, path, path_length, &info);
+		if (status)
+			return status;
 
 		// Recursively index each directory.
-		if (mode == S_IFDIR)
+		if (S_ISDIR(info.st_mode))
 		{
 			path[path_length++] = '/';
 			if (status = db_index(db, path, path_length))
