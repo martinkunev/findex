@@ -47,6 +47,8 @@ static int db_insert(int db, char *path, size_t path_length, const struct stat *
 	struct file file = {0};
 	uint16_t length = path_length;
 
+	//fprintf(stderr, "\x1b[31m" "insert" "\x1b[0m %s\n", path);
+
 	// If the file is a soft link, stat information about what it points to.
 	if (S_ISLNK(info->st_mode))
 	{
@@ -77,9 +79,9 @@ static int db_insert(int db, char *path, size_t path_length, const struct stat *
 
 			if (size >= 0)
 			{
-				enum type type = content(buffer, size);
-				file.content |= htobe16(typeinfo[type].content);
-				endian_big32(&file.mime_type, typeinfo[type].mime_type);
+				uint32_t type = (uint32_t)content(buffer, size);
+				file.content |= typeinfo[type].content;
+				endian_big32(&file.mime_type, &type);
 			}
 		}
 		break;
@@ -89,6 +91,7 @@ static int db_insert(int db, char *path, size_t path_length, const struct stat *
 		break;
 	}
 
+	file.content = htobe16(file.content);
 	endian_big16(&file.path_length, &length);
 	endian_big64(&file.mtime, &info->st_mtime);
 	endian_big64(&file.size, &info->st_size);
@@ -117,7 +120,7 @@ static int db_index(int db, char *path, size_t path_length)
 
 	int status;
 
-	if (path_length + 1 > PATH_SIZE_LIMIT)
+	if (path_length > PATH_SIZE_LIMIT)
 	{
 		status = ERROR_MEMORY;
 		goto finally;
@@ -169,7 +172,7 @@ static int db_index(int db, char *path, size_t path_length)
 		name_length = strlen(name);
 #endif
 
-		if (path_length + name_length + 1 > PATH_SIZE_LIMIT)
+		if (path_length + name_length > PATH_SIZE_LIMIT)
 		{
 			status = ERROR_MEMORY;
 			goto finally;
@@ -209,7 +212,7 @@ finally:
 
 int main(int argc, char *argv[])
 {
-	char path[PATH_SIZE_LIMIT];
+	char path[PATH_SIZE_LIMIT + 1];
 	int db;
 
 	size_t i;
@@ -229,15 +232,14 @@ int main(int argc, char *argv[])
 
 	write(db, STRING(HEADER));
 
-	for(i = 1; i < argc; ++i)
+	for(i = 1; i < argc; i += 1)
 	{
-		char target[PATH_SIZE_LIMIT];
+		char target[PATH_SIZE_LIMIT + 1];
 		size_t target_length;
-		if (normalize(target, &target_length, argv[i], strlen(argv[i])))
-		{
-			status = ERROR_MEMORY; // TODO fix this
+
+		status = normalize(target, &target_length, argv[i], strlen(argv[i]));
+		if (status)
 			goto error;
-		}
 
 		status = db_index(db, target, target_length);
 		if (status) goto error;

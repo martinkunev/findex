@@ -35,8 +35,6 @@
 
 // http://www.cyberciti.biz/faq/linux-unix-creating-a-manpage/
 
-#define PATH_SIZE_MAX 4096
-
 #define DB_PATH "/.cache/filement" /* database path relative to the home directory */
 
 #define STRING(s) (s), sizeof(s) - 1
@@ -358,7 +356,7 @@ static int find(const unsigned char *db, size_t dbsize, int (*callback)(const ch
 // TODO ? indicate error conditions
 static unsigned char *db_open(struct stat *info)
 {
-	char db_path[PATH_SIZE_MAX];
+	char db_path[PATH_SIZE_LIMIT + 1];
 	int db;
 
 	void *buffer;
@@ -517,7 +515,7 @@ int main(int argc, char *argv[])
 	}
 	if (!location) return usage(1);
 
-	char path[PATH_SIZE_LIMIT];
+	char path[PATH_SIZE_LIMIT + 1];
 	if (normalize(path, &location_length, location, location_length)) return -1; // TODO
 	location = path;
 
