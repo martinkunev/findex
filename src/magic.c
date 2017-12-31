@@ -25,6 +25,8 @@
 #include "base.h"
 #include "magic.h"
 
+#define STRING(s) (s), sizeof(s) - 1
+
 // WARNING: Files < 16B are never considered binary
 
 // This library uses big endian as internal format.
@@ -381,6 +383,8 @@ const struct filetype typeinfo[] =
 	[TYPE_3GPP] = {CONTENT_AUDIO | CONTENT_VIDEO, bytes("video/3gpp")},
 
 	[TYPE_TEXT] = {CONTENT_TEXT, bytes("text/plain")},
+	[TYPE_TEXT_SCRIPT] = {CONTENT_TEXT | CONTENT_EXECUTABLE, bytes("text/plain")}, // TODO differentiate sh, csh, python, perl, ruby, etc.
+	[TYPE_TEXT_XML] = {CONTENT_TEXT, bytes("text/xml")},
 
 	[TYPE_UNKNOWN] = {0, bytes("application/octet-stream")},
 };
@@ -413,7 +417,12 @@ static enum type content_unknown(const unsigned char *restrict magic, size_t siz
 				return TYPE_UNKNOWN;
 	}
 
-	return TYPE_TEXT;
+	if (!memcmp(magic, STRING("#!")))
+		return TYPE_TEXT_SCRIPT;
+	else if (!memcmp(magic, STRING("<?xml ")))
+		return TYPE_TEXT_XML;
+	else
+		return TYPE_TEXT;
 }
 
 // WARNING: When size is less than 16, this function considers that this is the size of the whole file.
