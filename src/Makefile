@@ -1,11 +1,15 @@
-CFLAGS:=$(CFLAGS) -I../ -DOS_LINUX
+CC:=gcc
+CFLAGS:=$(CFLAGS) -I../ -D_FILE_OFFSET_BITS=64 -DOS_LINUX
 
-all: findex ffind
+all: findex ffind finfo
 
-findex: findex.o magic.o path.o
+findex: findex.o magic.o path.o fs.o
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 ffind: ffind.o format.o path.o
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
+
+finfo: finfo.o magic.o path.o
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 clean:

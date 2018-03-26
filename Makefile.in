@@ -4,14 +4,9 @@ export LDFLAGS=-pthread
 
 tar_dir=findex-@{VERSION}
 
-all: findex ffind
+all:
+	$(MAKE) -C src $@
 	gzip < ffind.1 > ffind.1.gz
-
-findex:
-	$(MAKE) -C src $@
-
-ffind:
-	$(MAKE) -C src $@
 
 check:
 	$(MAKE) -C test $@

@@ -36,12 +36,13 @@
 #include "magic.h"
 #include "path.h"
 #include "findex.h"
+#include "fs.h"
 
 #define DB_ACCESS 0600
 
 #define STRING(s) (s), sizeof(s) - 1
 
-static int db_insert(int db, char *path, size_t path_length, const struct stat *restrict info)
+static int db_insert(int db, char *path, size_t path_length, const struct stat *restrict info, off_t *restrict offset)
 {
 	struct stat hardlink_info;
 	struct file file = {0};
@@ -96,8 +97,14 @@ static int db_insert(int db, char *path, size_t path_length, const struct stat *
 	endian_big64(&file.mtime, &info->st_mtime);
 	endian_big64(&file.size, &info->st_size);
 
-	if (write(db, &file, sizeof(file)) < 0) return -1; // TODO
-	if (write(db, path, path_length) < 0) return -1; // TODO
+	if (write(db, &file, sizeof(file)) < 0)
+		return ERROR; // TODO
+	if (write(db, path, path_length) < 0)
+		return ERROR; // TODO
+
+	// Add name index entry.
+	//add_index(offset);
+	//offset += sizeof(file) + path_length;
 
 	// TODO this tests that the inode number from stat and directory listing are the same; why do I need this?
 	//printf("%s\t%u\t%u\n", name, (unsigned)entry->d_ino, (unsigned)info.st_ino);
@@ -106,7 +113,7 @@ static int db_insert(int db, char *path, size_t path_length, const struct stat *
 }
 
 // Writes indexing data in a database.
-static int db_index(int db, char *path, size_t path_length)
+static int db_index(int db, char *path, size_t path_length, off_t *restrict offset)
 {
 	DIR *dir;
 	struct dirent *entry;
@@ -120,24 +127,26 @@ static int db_index(int db, char *path, size_t path_length)
 
 	int status;
 
+/* TODO I should be able to delete this
 	if (path_length > PATH_SIZE_LIMIT)
 	{
 		status = ERROR_MEMORY;
 		goto finally;
-	}
+	}*/
 	path[path_length] = 0;
+
+	// TODO better error handling
 
 	dir = opendir(path);
 	if (!dir)
 	{
-		// TODO better error handling
 		switch (errno)
 		{
 		case EACCES:
 			return 0;
 
 		default:
-			return -1;
+			return ERROR;
 		}
 	}
 
@@ -150,13 +159,13 @@ static int db_index(int db, char *path, size_t path_length)
 		if (!(entry = readdir(dir)))
 		{
 			if (errno)
-				return -1; // TODO error
+				return ERROR;
 			else
 				break; // no more entries
 		}
 #else
 		if (readdir_r(dir, entry, &more))
-			return -1; // TODO error
+			return ERROR;
 		if (!more)
 			break; // no more entries
 #endif
@@ -181,17 +190,22 @@ static int db_index(int db, char *path, size_t path_length)
 		path_length += name_length;
 		path[path_length] = 0;
 
-		if (lstat(path, &info) < 0) return -1; // TODO error
+		if (lstat(path, &info) < 0) return ERROR;
 
-		status = db_insert(db, path, path_length, &info);
+		status = db_insert(db, path, path_length, &info, offset);
 		if (status)
 			return status;
 
 		// Recursively index each directory.
 		if (S_ISDIR(info.st_mode))
 		{
+			if (path_length + 1 > PATH_SIZE_LIMIT)
+			{
+				status = ERROR_MEMORY;
+				goto finally;
+			}
 			path[path_length++] = '/';
-			if (status = db_index(db, path, path_length))
+			if (status = db_index(db, path, path_length, offset))
 				goto finally;
 			path_length -= 1;
 		}
@@ -218,6 +232,8 @@ int main(int argc, char *argv[])
 	size_t i;
 	int status;
 
+	off_t offset;
+
 	if ((argc < 2) || ((argc == 2) && !strcmp(argv[1], "--help")))
 	{
 		write(2, STRING("Usage: ./findex <path> ...\n"));
@@ -226,11 +242,15 @@ int main(int argc, char *argv[])
 
 	// TODO create parent directory?
 	status = db_path_init(path);
-	if (status) return status;
-	db = creat(path, DB_ACCESS);
-	if (db < 0) return db; // TODO better error checking
+	if (status)
+		return status;
+	db = fs_load(path, strlen(path), DB_ACCESS, 1);
+	if (db < 0)
+		return db;
 
-	write(db, STRING(HEADER));
+	if (write(db, STRING(HEADER)) < 0)
+		return ERROR;
+	offset = sizeof(HEADER) - 1;
 
 	for(i = 1; i < argc; i += 1)
 	{
@@ -241,7 +261,7 @@ int main(int argc, char *argv[])
 		if (status)
 			goto error;
 
-		status = db_index(db, target, target_length);
+		status = db_index(db, target, target_length, &offset);
 		if (status) goto error;
 	}
 
