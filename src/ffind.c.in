@@ -31,11 +31,9 @@
 #include "format.h"
 #include "magic.h"
 #include "path.h"
-#include "findex.h"
+#include "db.h"
 
 // http://www.cyberciti.biz/faq/linux-unix-creating-a-manpage/
-
-#define DB_PATH "/.cache/filement" /* database path relative to the home directory */
 
 #define STRING(s) (s), sizeof(s) - 1
 
@@ -292,10 +290,7 @@ static int find(const unsigned char *db, size_t dbsize, int (*callback)(const ch
 
 	int status;
 
-	// Check file header.
-	if (dbsize < (sizeof(HEADER) - 1)) return ERROR_INPUT; // unexpected EOF
-	if (memcmp(db, HEADER, sizeof(HEADER) - 1)) return ERROR_INPUT;
-	offset = sizeof(HEADER) - 1;
+	offset = 8; // TODO fix this
 
 	while (left = dbsize - offset)
 	{
@@ -351,37 +346,6 @@ static int find(const unsigned char *db, size_t dbsize, int (*callback)(const ch
 	}
 
 	return 0;
-}
-
-// TODO ? indicate error conditions
-static unsigned char *db_open(struct stat *info)
-{
-	char db_path[PATH_SIZE_LIMIT + 1];
-	int db;
-
-	void *buffer;
-
-	if (db_path_init(db_path)) return 0;
-
-	db = open(db_path, O_RDONLY);
-	if (db < 0) return 0;
-
-	if (fstat(db, info) < 0)
-	{
-		close(db);
-		return 0;
-	}
-
-	buffer = mmap(0, info->st_size, PROT_READ, MAP_PRIVATE, db, 0);
-	close(db);
-	if (buffer == MAP_FAILED) return 0;
-
-	return (unsigned char *)buffer;
-}
-
-static void db_close(unsigned char *restrict buffer, const struct stat *restrict info)
-{
-	munmap(buffer, info->st_size);
 }
 
 int main(int argc, char *argv[])
@@ -515,19 +479,20 @@ int main(int argc, char *argv[])
 	}
 	if (!location) return usage(1);
 
+	struct search search;
+	int status;
+
 	char path[PATH_SIZE_LIMIT + 1];
 	if (normalize(path, &location_length, location, location_length)) return -1; // TODO
 	location = path;
 
-	struct stat info;
-	unsigned char *buffer = db_open(&info);
-	if (!buffer) return -1; // TODO
+	status = db_open(&search);
+	if (status < 0)
+		return status;
 
-	int status = find(buffer, info.st_size, action, argv);
+	status = find(search.data_buffer, search.info.st_size, action, argv);
 
-	db_close(buffer, &info);
+	db_close(&search);
 
-	if (status) return -1; // TODO
-
-	return 0;
+	return -status;
 }

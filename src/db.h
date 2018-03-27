@@ -17,8 +17,6 @@
  * along with Filement Index.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define DB_HEADER "\x00\x03\x00\00\x00\x00\x00\x00"
-
 struct db
 {
 	off_t data_offset;
@@ -29,6 +27,16 @@ struct db
 	size_t index_path_length;
 	char data_path[PATH_SIZE_LIMIT + 1];
 	char index_path[PATH_SIZE_LIMIT + 1];
+};
+
+struct search
+{
+	struct stat info;
+	size_t data_path_length;
+	size_t index_path_length;
+	char data_path[PATH_SIZE_LIMIT + 1];
+	char index_path[PATH_SIZE_LIMIT + 1];
+	unsigned char *data_buffer;
 };
 
 struct file
@@ -45,3 +53,6 @@ int db_persist(struct db *restrict db);
 void db_delete(struct db *restrict db);
 
 int db_add(struct db *restrict db, const char *restrict path, size_t path_length, const struct file *restrict file);
+
+int db_open(struct search *restrict search);
+void db_close(const struct search *restrict search);
