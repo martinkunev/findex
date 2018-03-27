@@ -1,6 +1,6 @@
 /*
  * Filement Index
- * Copyright (C) 2017  Martin Kunev <martinkunev@gmail.com>
+ * Copyright (C) 2018  Martin Kunev <martinkunev@gmail.com>
  *
  * This file is part of Filement Index.
  *
@@ -17,7 +17,19 @@
  * along with Filement Index.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define HEADER "\x00\x03\x00\00\x00\x00\x00\x00"
+#define DB_HEADER "\x00\x03\x00\00\x00\x00\x00\x00"
+
+struct db
+{
+	off_t data_offset;
+	off_t index_offset;
+	int data;
+	int index;
+	size_t data_path_length;
+	size_t index_path_length;
+	char data_path[PATH_SIZE_LIMIT + 1];
+	char index_path[PATH_SIZE_LIMIT + 1];
+};
 
 struct file
 {
@@ -27,3 +39,9 @@ struct file
 	uint64_t mtime;
     uint64_t size;
 } __attribute__((packed));
+
+int db_new(struct db *restrict db);
+int db_persist(struct db *restrict db);
+void db_delete(struct db *restrict db);
+
+int db_add(struct db *restrict db, const char *restrict path, size_t path_length, const struct file *restrict file);

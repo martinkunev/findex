@@ -1,6 +1,6 @@
 /*
  * Filement Index
- * Copyright (C) 2017  Martin Kunev <martinkunev@gmail.com>
+ * Copyright (C) 2018  Martin Kunev <martinkunev@gmail.com>
  *
  * This file is part of Filement Index.
  *
@@ -35,14 +35,11 @@
 #include "arch.h"
 #include "magic.h"
 #include "path.h"
-#include "findex.h"
-#include "fs.h"
-
-#define DB_ACCESS 0600
+#include "db.h"
 
 #define STRING(s) (s), sizeof(s) - 1
 
-static int db_insert(int db, char *path, size_t path_length, const struct stat *restrict info, off_t *restrict offset)
+static int db_insert(struct db *restrict db, char *path, size_t path_length, const struct stat *restrict info)
 {
 	struct stat hardlink_info;
 	struct file file = {0};
@@ -97,23 +94,14 @@ static int db_insert(int db, char *path, size_t path_length, const struct stat *
 	endian_big64(&file.mtime, &info->st_mtime);
 	endian_big64(&file.size, &info->st_size);
 
-	if (write(db, &file, sizeof(file)) < 0)
-		return ERROR; // TODO
-	if (write(db, path, path_length) < 0)
-		return ERROR; // TODO
-
-	// Add name index entry.
-	//add_index(offset);
-	//offset += sizeof(file) + path_length;
-
 	// TODO this tests that the inode number from stat and directory listing are the same; why do I need this?
 	//printf("%s\t%u\t%u\n", name, (unsigned)entry->d_ino, (unsigned)info.st_ino);
 
-	return 0;
+	return db_add(db, path, path_length, &file);
 }
 
 // Writes indexing data in a database.
-static int db_index(int db, char *path, size_t path_length, off_t *restrict offset)
+static int db_index(struct db *restrict db, char *path, size_t path_length)
 {
 	DIR *dir;
 	struct dirent *entry;
@@ -192,7 +180,7 @@ static int db_index(int db, char *path, size_t path_length, off_t *restrict offs
 
 		if (lstat(path, &info) < 0) return ERROR;
 
-		status = db_insert(db, path, path_length, &info, offset);
+		status = db_insert(db, path, path_length, &info);
 		if (status)
 			return status;
 
@@ -205,7 +193,7 @@ static int db_index(int db, char *path, size_t path_length, off_t *restrict offs
 				goto finally;
 			}
 			path[path_length++] = '/';
-			if (status = db_index(db, path, path_length, offset))
+			if (status = db_index(db, path, path_length))
 				goto finally;
 			path_length -= 1;
 		}
@@ -226,13 +214,10 @@ finally:
 
 int main(int argc, char *argv[])
 {
-	char path[PATH_SIZE_LIMIT + 1];
-	int db;
+	struct db db;
 
 	size_t i;
 	int status;
-
-	off_t offset;
 
 	if ((argc < 2) || ((argc == 2) && !strcmp(argv[1], "--help")))
 	{
@@ -240,17 +225,9 @@ int main(int argc, char *argv[])
 		return ERROR_INPUT;
 	}
 
-	// TODO create parent directory?
-	status = db_path_init(path);
-	if (status)
+	status = db_new(&db);
+	if (status < 0)
 		return status;
-	db = fs_load(path, strlen(path), DB_ACCESS, 1);
-	if (db < 0)
-		return db;
-
-	if (write(db, STRING(HEADER)) < 0)
-		return ERROR;
-	offset = sizeof(HEADER) - 1;
 
 	for(i = 1; i < argc; i += 1)
 	{
@@ -261,15 +238,14 @@ int main(int argc, char *argv[])
 		if (status)
 			goto error;
 
-		status = db_index(db, target, target_length, &offset);
-		if (status) goto error;
+		status = db_index(&db, target, target_length);
+		if (status)
+			goto error;
 	}
 
-	close(db);
-	return 0;
+	return -db_persist(&db);
 
 error:
-	close(db);
-	unlink(path);
+	db_delete(&db);
 	return status;
 }

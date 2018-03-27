@@ -24,25 +24,6 @@
 #include "base.h"
 #include "path.h"
 
-#define DB_PATH "/.cache/filement" /* database path relative to the user's home directory */
-
-int db_path_init(char path[static PATH_SIZE_LIMIT + 1])
-{
-	const char *home;
-	size_t home_length;
-
-	home = getenv("HOME");
-	if (!home) return ERROR_MISSING;
-	home_length = strlen(home);
-	if ((home_length + sizeof(DB_PATH)) > PATH_SIZE_LIMIT) return ERROR_MISSING;
-
-	memcpy(path, home, home_length);
-	memcpy(path + home_length, DB_PATH, sizeof(DB_PATH) - 1);
-	path[home_length + sizeof(DB_PATH) - 1] = 0;
-
-	return 0;
-}
-
 // Generates a normalized absolute path corresponding to the relative path.
 int normalize(char path[static restrict PATH_SIZE_LIMIT + 1], size_t *restrict path_length, const char *restrict raw, size_t raw_length)
 {
