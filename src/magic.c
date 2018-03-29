@@ -212,6 +212,25 @@ bytes 8-11		file content			"WAVE" || "AVI "
 #define RIFF_AVI						sign4('A', 'V', 'I', ' ')
 
 
+/* TODO file size (header is at least 52 bytes)
+Executable and Linkable Format			?
+https://en.wikipedia.org/wiki/Executable_and_Linkable_Format
+bytes 0-3		magic number			7f "ELF"
+*/
+#define ELF_MAGIC_0_3					sign4(0x7F, 'E', 'L', 'F')
+
+
+/*
+Mach-O
+https://studfiles.net/preview/2082911/page:2/
+https://opensource.apple.com/source/xnu/xnu-792/EXTERNAL_HEADERS/mach-o/loader.h
+There are 32-bit and 64-bit versions of the format
+bytes 0-3		magic number			feedface || feedfacf
+*/
+#define MACHO_32_MAGIC_0_3				0xfeedface
+#define MACHO_64_MAGIC_0_3				0xfeedfacf
+
+
 /* TODO valid text
 DjVu				image/vnd.djvu
 http://www.fileformat.info/info/mimetype/image/vnd.djvu/index.htm
@@ -356,6 +375,9 @@ const struct filetype typeinfo[] =
 	[TYPE_GZIP] = {CONTENT_ARCHIVE | CONTENT_DIRECTORY, bytes("application/gzip")},
 	[TYPE_BZIP2] = {CONTENT_ARCHIVE, bytes("application/x-bzip2")},
 	[TYPE_XZ] = {CONTENT_ARCHIVE, bytes("application/x-xz")},
+
+	[TYPE_ELF] = {CONTENT_EXECUTABLE, bytes("application/x-sharedlib")}, // TODO check mime type
+	[TYPE_MACHO] = {CONTENT_EXECUTABLE, bytes("application/octet-stream")}, // TODO check mime type
 
 	// TODO openoffice
 	[TYPE_DJVU] = {CONTENT_DOCUMENT, bytes("image/vnd.djvu")},
@@ -526,6 +548,17 @@ enum type content(const unsigned char *magic, size_t size)
 
 	if ((bytes_0_7 & ZIP7_MASK_0_7) == ZIP7_MAGIC_0_7)
 		return TYPE_7ZIP;
+
+	// executables
+	switch (bytes_0_3)
+	{
+	case ELF_MAGIC_0_3:
+		return TYPE_ELF;
+
+	case MACHO_32_MAGIC_0_3:
+	case MACHO_64_MAGIC_0_3:
+		return TYPE_MACHO;
+	}
 
 	// other formats
 
