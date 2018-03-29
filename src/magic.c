@@ -220,8 +220,8 @@ bytes 0-3		magic number			7f "ELF"
 #define ELF_MAGIC_0_3					sign4(0x7F, 'E', 'L', 'F')
 
 
-/*
-Mach-O
+/* TODO file size
+Mach-O									?
 https://studfiles.net/preview/2082911/page:2/
 https://opensource.apple.com/source/xnu/xnu-792/EXTERNAL_HEADERS/mach-o/loader.h
 There are 32-bit and 64-bit versions of the format
@@ -377,7 +377,7 @@ const struct filetype typeinfo[] =
 	[TYPE_XZ] = {CONTENT_ARCHIVE, bytes("application/x-xz")},
 
 	[TYPE_ELF] = {CONTENT_EXECUTABLE, bytes("application/x-sharedlib")}, // TODO check mime type
-	[TYPE_MACHO] = {CONTENT_EXECUTABLE, bytes("application/octet-stream")}, // TODO check mime type
+	[TYPE_MACHO] = {CONTENT_EXECUTABLE, bytes("application/x-mach-binary")}, // TODO check mime type
 
 	// TODO openoffice
 	[TYPE_DJVU] = {CONTENT_DOCUMENT, bytes("image/vnd.djvu")},
