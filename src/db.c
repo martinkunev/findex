@@ -30,6 +30,7 @@
 #include "path.h"
 #include "fs.h"
 #include "hash.h"
+#include "magic.h"
 #include "db.h"
 
 #define DB_ACCESS 0600
@@ -228,4 +229,65 @@ error:
 void db_close(const struct search *restrict search)
 {
 	munmap(search->data_buffer, search->info.st_size);
+}
+
+int db_file_info(struct file *restrict file, char *path, size_t path_length, const struct stat *restrict info)
+{
+	struct stat hardlink_info;
+	uint16_t length = path_length;
+
+	*file = (struct file){0};
+
+	//fprintf(stderr, "\x1b[31m" "insert" "\x1b[0m %s\n", path);
+
+	// If the file is a soft link, stat information about what it points to.
+	if (S_ISLNK(info->st_mode))
+	{
+		if (stat(path, &hardlink_info) < 0)
+			return ERROR; // TODO more error info
+		info = &hardlink_info;
+
+		file->content |= CONTENT_LINK;
+	}
+
+	switch (info->st_mode & S_IFMT)
+	{
+	case S_IFDIR:
+		file->content |= CONTENT_DIRECTORY;
+		break;
+
+	case S_IFREG:
+		{
+			// TODO report open and read errors
+			int entry = open(path, O_RDONLY);
+			if (entry < 0)
+				break;
+
+			unsigned char buffer[MAGIC_SIZE];
+			ssize_t size = read(entry, &buffer, MAGIC_SIZE);
+
+			close(entry);
+
+			if (size < 0)
+				break;
+
+			uint32_t type = (uint32_t)content(buffer, size);
+			file->content |= typeinfo[type].content;
+			file->mime_type = type;
+		}
+		break;
+
+	default:
+		file->content |= CONTENT_SPECIAL;
+		break;
+	}
+
+	file->path_length = length;
+	file->mtime = info->st_mtime;
+	file->size = info->st_size;
+
+	// TODO this tests that the inode number from stat and directory listing are the same; why do I need this?
+	//printf("%s\t%u\t%u\n", name, (unsigned)entry->d_ino, (unsigned)info.st_ino);
+
+	return 0;
 }

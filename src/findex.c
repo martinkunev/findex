@@ -32,8 +32,6 @@
 #endif
 
 #include "base.h"
-#include "arch.h"
-#include "magic.h"
 #include "path.h"
 #include "db.h"
 
@@ -41,61 +39,11 @@
 
 static int db_insert(struct db *restrict db, char *path, size_t path_length, const struct stat *restrict info)
 {
-	struct stat hardlink_info;
-	struct file file = {0};
-	uint16_t length = path_length;
+	struct file file;
 
-	//fprintf(stderr, "\x1b[31m" "insert" "\x1b[0m %s\n", path);
-
-	// If the file is a soft link, stat information about what it points to.
-	if (S_ISLNK(info->st_mode))
-	{
-		if (stat(path, &hardlink_info) < 0)
-			return 0; // TODO report this error; is it okay if I ignore the file?
-		info = &hardlink_info;
-
-		file.content |= CONTENT_LINK;
-	}
-
-	switch (info->st_mode & S_IFMT)
-	{
-		int entry;
-
-	case S_IFDIR:
-		file.content |= CONTENT_DIRECTORY;
-		break;
-
-	case S_IFREG:
-		// TODO report open and read errors
-		entry = open(path, O_RDONLY);
-		if (entry >= 0)
-		{
-			unsigned char buffer[MAGIC_SIZE];
-			ssize_t size = read(entry, &buffer, MAGIC_SIZE);
-
-			close(entry);
-
-			if (size >= 0)
-			{
-				uint32_t type = (uint32_t)content(buffer, size);
-				file.content |= typeinfo[type].content;
-				endian_big32(&file.mime_type, &type);
-			}
-		}
-		break;
-
-	default:
-		file.content |= CONTENT_SPECIAL;
-		break;
-	}
-
-	file.content = htobe16(file.content);
-	endian_big16(&file.path_length, &length);
-	endian_big64(&file.mtime, &info->st_mtime);
-	endian_big64(&file.size, &info->st_size);
-
-	// TODO this tests that the inode number from stat and directory listing are the same; why do I need this?
-	//printf("%s\t%u\t%u\n", name, (unsigned)entry->d_ino, (unsigned)info.st_ino);
+	int status = db_file_info(&file, path, path_length, info);
+	if (status < 0)
+		return status;
 
 	return db_add(db, path, path_length, &file);
 }

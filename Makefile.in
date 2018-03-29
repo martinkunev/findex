@@ -11,7 +11,7 @@ all:
 check:
 	$(MAKE) -C test $@
 
-tar: mrproper
+tar: distclean
 	mkdir $(tar_dir)
 	cp -r configure COPYING ffind.1.in Makefile.in manifesto README src test TODO $(tar_dir)
 	tar cfz $(tar_dir).tar.gz $(tar_dir)
@@ -22,7 +22,7 @@ clean:
 	$(MAKE) -C test $@
 	rm -f ffind.1.gz
 
-mrproper: clean
+distclean: clean
 	rm -f Makefile
 	rm -f ffind.1
 	rm -f src/ffind.c
