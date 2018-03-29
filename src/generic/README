@@ -1,0 +1,149 @@
+This source library provides generic data structures, designed to be customizable. For flexibility reasons the data structures are minimalistic and transparent - they provide only the key functionality intrinsic for the data structure and some data structure members are intended to be accessed directly.
+
+The source is compatible with the C99 standard.
+
+Optionally you can customize any data structure by overriding the default parameters.
+
+## Array
+
+An array whose elements are stored sequentially in memory and have the same type. Can be resized dynamically.
+
+	struct array
+	{
+		size_t count; // number of elements currently stored
+		size_t capacity; // size of memory allocated for data in bytes
+		void *data; // data allocated for the elements
+	};
+
+	struct array bar = {0}; // initialize
+	free(bar.data); // terminate
+
+`int array_expand(struct array *restrict array, size_t count);`
+	Ensures there is enough memory in array to store count elements.
+	Returns `0` on success or negative error code on failure.
+
+Header parameters:
+	`ARRAY_NAME` - name of struct and prefix for function names
+		default: `array`
+	`ARRAY_TYPE` - data type of the elements of the array
+		default: `void *`
+
+### Example
+
+	#define ARRAY_NAME arr
+	#define ARRAY_TYPE int
+	#include "array.g"
+
+	int main(void)
+	{
+		struct arr squares = {0};
+
+		if (arr_expand(&squares, 100) < 0)
+			abort();
+		for(i = 0; i < 100; i += 1)
+			squares.data[i] = i * i;
+		squares.count = 100;
+
+		free(squares.data);
+
+		return 0;
+	}
+
+For an implementation of appendable string, see `string.h` and `string.c`.
+
+### Use as a static type
+
+In a source file:
+
+	// optional parameters go here
+	#include "array.g"
+
+You can have multiple arrays defined in the same source file as long as their names don't conflict.
+
+### Use as a global type
+
+In a header file (e.g. `foo.h`):
+
+	#define ARRAY_GLOBAL
+	// optional header parameters go here
+	#include "array.g"
+
+In a source file:
+
+	#include "foo.h"
+	#include "array.g"
+
+In this case definitions prefixed with `ARRAY_` will be used internally and will be visible from the first include until after the second include. You can have only one global array defined per header/source file.
+
+## Heap
+
+A heap (linearly-stored complete binary tree where children have lower priority than their parent) implementation of priority queue. The source assumes memory management is handled by an external mechanism.
+
+	struct heap
+	{
+		void *data; // Array with the elements.
+		size_t count; // Number of elements actually in the heap.
+	};
+
+	struct heap bar = {.data = data, .count = count}; // initialize from an array `data` with `count` elements
+	heap_heapify(&bar); // ensure the array `data` satisfies the heap property
+
+`void heap_push(struct heap *heap, void *value);`
+	Adds a new element to the heap.
+`void heap_pop(struct heap *heap);`
+	Removes the element with the highest priority from the heap.
+`void heap_emerge(struct heap *heap, size_t index);`
+	Updates heap after the element at `index` increased its priority.
+`void heap_heapify(struct heap *heap);`
+	Turns the array `data` into a heap by reordering array elements.
+
+Header parameters:
+	`HEAP_NAME` - name of struct and prefix for function names
+		default: `array`
+	`HEAP_TYPE` - data type of the elements of the heap
+		default: `void *`
+Source parameters:
+	`HEAP_ABOVE` - function of two heap elements, returning whether the first has higher priority
+		HEAP_ABOVE(a, b)
+		default: ((a) >= (b))
+	`HEAP_UPDATE` - function of heap and index in it, called when an element is placed or moved to `index`
+		HEAP_UPDATE(heap, index)
+		default: (no action)
+
+	The arguments passed to the functions are guaranteed to produce no side effects. Therefore a macro can be used instead of function and any parameter can appear more than once in the macro.
+
+### Example
+
+For an implementation of in-place sorting, see `sort.h` and `sort.c`.
+
+### Use as a static type
+
+In a source file:
+
+	// optional parameters go here
+	#include "heap.g"
+
+You can have multiple heaps defined in the same source file as long as their names don't conflict.
+
+### Use as a global type
+
+In a header file (e.g. `foo.h`):
+
+	#define HEAP_GLOBAL
+	// optional header parameters go here
+	#include "heap.g"
+
+In a source file:
+
+	#include "foo.h"
+	// optional source parameters go here
+	#include "heap.g"
+
+In this case definitions prefixed with `HEAP_` will be used internally and will be visible from the first include until after the second include. You can have only one global heap defined per header/source file.
+
+## Hash map
+	// Hash map storing key as a bytearray and a corresponding value
+
+## AVL tree
+
+// TODO disjoint set? graph data structures?
