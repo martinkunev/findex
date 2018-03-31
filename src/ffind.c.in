@@ -299,7 +299,7 @@ static int find(const unsigned char *db, size_t dbsize, int (*callback)(const ch
 		offset += sizeof(file);
 
 		raw = file.path_length;
-		endian_big16(&file.path_length, &raw);
+		file.path_length = raw;
 		// if (!file.path_length) ;
 
 		left = dbsize - offset;
@@ -309,16 +309,16 @@ static int find(const unsigned char *db, size_t dbsize, int (*callback)(const ch
 		offset += file.path_length;
 
 		raw = file.content;
-		endian_big16(&file.content, &raw);
+		file.content = raw;
 
 		raw32 = file.mime_type;
-		endian_big32(&file.mime_type, &raw32);
+		file.mime_type = raw32;
 
 		raw64 = file.mtime;
-		endian_big64(&file.mtime, &raw64);
+		file.mtime = raw64;
 
 		raw64 = file.size;
-		endian_big64(&file.size, &raw64);
+		file.size = raw64;
 
 		// TODO type filter
 
