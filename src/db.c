@@ -33,6 +33,17 @@
 #include "magic.h"
 #include "db.h"
 
+struct index_entry
+{
+	uint32_t hash;
+	uint32_t start; // limits index database size to 4GiB
+} __attribute__((packed));
+
+#define HEAP_NAME heap_index
+#define HEAP_TYPE struct index_entry
+#define HEAP_ABOVE(a, b) ((a).hash >= (b).hash)
+#include "generic/heap.g"
+
 #define DB_ACCESS 0600
 #define DB_HEADER "\x00\x03\x00\00\x00\x00\x00\x00"
 
@@ -42,13 +53,9 @@
 #define DB_DATA_NAME "data"
 #define DB_INDEX_NAME "index"
 
-#define PATH_PREFIX "/.cache/filement/" /* relative path to directory storing database */
+#define INDEX_SIZE_LIMIT (64 * 1024 * 1024)
 
-struct index_entry
-{
-	uint32_t hash;
-	uint32_t start; // limits index database size to 4GiB
-};
+#define PATH_PREFIX "/.cache/filement/" /* relative path to directory storing database */
 
 static size_t path_generate(char path[static PATH_SIZE_LIMIT + 1], const char *restrict name, size_t name_length)
 {
@@ -128,9 +135,56 @@ int db_new(struct db *restrict db)
 	return 0;
 }
 
+int db_add(struct db *restrict db, const char *restrict path, size_t path_length, const struct file *restrict file)
+{
+	struct index_entry entry;
+
+	if (write(db->data, file, sizeof(*file)) < 0)
+		return ERROR; // TODO
+	if (write(db->data, path, path_length) < 0)
+		return ERROR; // TODO
+
+	entry.hash = hash((const unsigned char *)path, path_length);
+	entry.start = db->data_offset;
+
+	db->data_offset += sizeof(*file) + path_length;
+
+	// TODO support larger chunks by using merge sort on disk
+	if (db->index_offset + sizeof(entry) > INDEX_SIZE_LIMIT)
+		return ERROR; // TODO
+
+	if (write(db->index, &entry, sizeof(entry)) < 0)
+		return ERROR; // TODO
+
+	db->index_offset += sizeof(entry);
+
+	return 0;
+}
+
 int db_persist(struct db *restrict db)
 {
 	char path[PATH_SIZE_LIMIT + 1];
+	void *buffer;
+	struct heap_index heap;
+
+	close(db->data);
+
+	// Map index file in memory.
+	buffer = mmap(0, db->index_offset, PROT_WRITE, MAP_SHARED, db->index, 0);
+	close(db->index);
+	if (buffer == MAP_FAILED)
+		return ERROR;
+
+	// Sort index with heap sort.
+	heap.data = buffer;
+	heap.count = db->index_offset / sizeof(struct index_entry);
+	heap_index_heapify(&heap);
+	while (heap.count)
+	{
+		struct index_entry entry = heap.data[0];
+		heap_index_pop(&heap);
+		heap.data[heap.count] = entry;
+	}
 
 	// Replace old data database with the new one.
 	memcpy(path, db->data_path, db->data_path_length);
@@ -146,9 +200,6 @@ int db_persist(struct db *restrict db)
 	if (rename(db->index_path, path) < 0)
 		goto error; // TODO we can possibly have index not corresponding to the database here. handle this
 
-	close(db->data);
-	close(db->index);
-
 	return 0;
 
 error:
@@ -162,25 +213,6 @@ void db_delete(struct db *restrict db)
 	unlink(db->index_path);
 	close(db->data);
 	close(db->index);
-}
-
-int db_add(struct db *restrict db, const char *restrict path, size_t path_length, const struct file *restrict file)
-{
-	struct index_entry entry;
-
-	if (write(db->data, file, sizeof(*file)) < 0)
-		return ERROR; // TODO
-	if (write(db->data, path, path_length) < 0)
-		return ERROR; // TODO
-
-	entry.hash = hash((const unsigned char *)path, path_length);
-	entry.start = db->data_offset;
-
-	db->data_offset += sizeof(*file) + path_length;
-
-	// TODO handle entry
-
-	return 0;
 }
 
 // TODO indicate error conditions
