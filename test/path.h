@@ -60,7 +60,7 @@ static void check(const struct bytes *restrict relative, const struct bytes *res
 static void test_normalize_root(void **state)
 {
 	struct bytes *relative = bytes("/");
-	struct bytes *answer = bytes("/");
+	struct bytes *answer = bytes("");
 	check(relative, answer);
 }
 
@@ -75,7 +75,7 @@ static void test_normalize_simple(void **state)
 	expect_value(__wrap_free, ptr, directory);
 
 	struct bytes *relative = bytes("x");
-	struct bytes *answer = bytes("/home/martin/x/");
+	struct bytes *answer = bytes("/home/martin/x");
 	check(relative, answer);
 }
 
@@ -90,7 +90,7 @@ static void test_normalize_current(void **state)
 	expect_value(__wrap_free, ptr, directory);
 
 	struct bytes *relative = bytes(".");
-	struct bytes *answer = bytes("/home/martin/");
+	struct bytes *answer = bytes("/home/martin");
 	check(relative, answer);
 }
 
@@ -105,6 +105,6 @@ static void test_normalize_parent(void **state)
 	expect_value(__wrap_free, ptr, directory);
 
 	struct bytes *relative = bytes("../dir/");
-	struct bytes *answer = bytes("/home/dir/");
+	struct bytes *answer = bytes("/home/dir");
 	check(relative, answer);
 }

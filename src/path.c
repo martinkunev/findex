@@ -17,6 +17,7 @@
  * along with Filement Index.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -24,12 +25,14 @@
 #include "base.h"
 #include "path.h"
 
-// Generates a normalized absolute path corresponding to the relative path.
-int normalize(char path[static restrict PATH_SIZE_LIMIT + 1], size_t *restrict path_length, const char *restrict raw, size_t raw_length)
+// Generates a normalized absolute path corresponding to a given path (getting current directory if necessary). Terminates the string with NUL.
+int normalize(char path[static restrict PATH_SIZE_LIMIT], size_t *restrict path_length, const char *restrict raw, size_t raw_length)
 {
 	size_t length;
 	size_t start, index;
 	size_t offset;
+
+	assert(raw_length);
 
 	// Prepare the path for normalization.
 	if (raw[0] != '/') // the input is relative path
@@ -38,12 +41,13 @@ int normalize(char path[static restrict PATH_SIZE_LIMIT + 1], size_t *restrict p
 		size_t cwd_length;
 
 		cwd = getcwd(0, 0);
-		if (!cwd) abort();
+		if (!cwd)
+			return ERROR; // TODO better error
 		cwd_length = strlen(cwd);
 
 		// Copy current directory path in path.
-		// Put terminating slash if cwd is not the root directory.
-		length = ((cwd_length > 1) ? (cwd_length + 1) : cwd_length);
+		// Add terminating slash if cwd is not the root directory.
+		length = cwd_length + (cwd_length > 1);
 		if (length > PATH_SIZE_LIMIT)
 		{
 			free(cwd);
@@ -51,7 +55,8 @@ int normalize(char path[static restrict PATH_SIZE_LIMIT + 1], size_t *restrict p
 		}
 		memcpy(path, cwd, cwd_length);
 		free(cwd);
-		if (cwd_length > 1) path[cwd_length] = '/';
+		if (cwd_length > 1)
+			path[cwd_length] = '/';
 	}
 	else // absolute path
 	{
@@ -59,66 +64,81 @@ int normalize(char path[static restrict PATH_SIZE_LIMIT + 1], size_t *restrict p
 		length = 1;
 	}
 
-	// At the position of each slash, store the distance from the previous slash.
+	assert(length >= 1);
+	assert(path[0] == '/');
+	assert(path[length - 1] == '/');
+
+	// At the position of each slash, store path component length.
 	// Keep the initial slash untouched.
-	// Make start point to the slash before beginning of the last path component.
-	start = 0;
-	for(index = 1; index < length; ++index)
+	// Make start point to the slash before the last path component.
+	index = 1;
+	while (index < length)
 	{
-		if (path[index] == '/')
-		{
-			if ((index - start) > 255) return ERROR_UNSUPPORTED; // path component too long
-			path[index] = index - start;
-			start = index;
-		}
+		char *component_start, *component_end;
+
+		component_start = path + index;
+		component_end = memchr(component_start, '/', length - index);
+
+		assert(component_end);
+
+		if ((component_end - component_start) > 255)
+			return ERROR_UNSUPPORTED; // path component too long
+
+		*component_end = component_end - component_start;
+		index = component_end + 1 - path;
 	}
 
+	const char *raw_end = raw + raw_length;
+	size_t component_length;
+
 	// Normalize path by removing . and .. components and slash repetitions.
-	offset = 0;
-	do
+	for(; raw < raw_end; raw += component_length + 1)
 	{
-		if ((offset == raw_length) || (raw[offset] == '/')) // end of path component
+
+		// Find the end of the current path component.
+		const char *end = memchr(raw, '/', raw_end - raw);
+		if (!end)
+			end = raw_end;
+		component_length = end - raw;
+
+		switch (component_length)
 		{
-			switch (index - start)
-			{
-			case 1: // skip repeated /
-				continue;
+		case 0: // skip repeated /
+			continue;
 
-			case 2: // check for .
-				if (raw[offset - 1] != '.') break;
-				index = start + 1;
-				continue;
-
-			case 3: // check for ..
-				if ((raw[offset - 2] != '.') || (raw[offset - 1] != '.')) break;
-				if (start) start -= path[start]; // n the root directory .. points to the same directory
-				index = start + 1;
-				continue;
-			}
-
-			path[index] = index - start;
-			start = index;
-			if (offset == raw_length)
-			{
-				index += 1;
+		case 1: // check for .
+			if (raw[0] != '.')
 				break;
-			}
+			continue;
+
+		case 2: // check for ..
+			if ((raw[0] != '.') || (raw[1] != '.'))
+				break;
+			if (index > 1) // in the root directory .. points to the same directory
+				index -= path[index - 1] + 1;
+			continue;
 		}
-		else path[index] = raw[offset];
 
-		index += 1;
-		if (index == PATH_SIZE_LIMIT) return ERROR_UNSUPPORTED;
-	} while (offset++ < raw_length);
+		if (index + component_length + 1 > PATH_SIZE_LIMIT)
+			return ERROR_UNSUPPORTED;
 
+		memcpy(path + index, raw, component_length);
+		path[index + component_length] = component_length;
+		index += component_length + 1;
+	}
+
+	index -= 1;
 	*path_length = index;
 
 	// Restore path component separators to slashes.
-	do
+	while (index)
 	{
-		index = start;
-		start -= path[index];
+		component_length = path[index];
 		path[index] = '/';
-	} while (index);
+		index -= 1 + component_length;
+	}
+
+	path[*path_length] = 0;
 
 	return 0;
 }
