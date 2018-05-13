@@ -41,7 +41,7 @@ static int db_insert(struct db *restrict db, char *path, size_t path_length, con
 {
 	struct file file;
 
-	int status = db_file_info(&file, path, path_length, info);
+	int status = db_set_fileinfo(&file, path, path_length, info);
 	if (status < 0)
 		return status;
 
@@ -179,7 +179,7 @@ int main(int argc, char *argv[])
 
 	for(i = 1; i < argc; i += 1)
 	{
-		char target[PATH_SIZE_LIMIT + 1];
+		char target[PATH_SIZE_LIMIT];
 		size_t target_length;
 
 		status = normalize(target, &target_length, argv[i], strlen(argv[i]));

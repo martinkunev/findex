@@ -176,8 +176,8 @@ int db_persist(struct db *restrict db)
 		return ERROR;
 
 	// Sort index with heap sort.
-	heap.data = buffer;
-	heap.count = db->index_offset / sizeof(struct index_entry);
+	heap.data = (void *)((char *)buffer + sizeof(DB_HEADER) - 1); // TODO ugly casting hack; think how to fix
+	heap.count = (db->index_offset - sizeof(DB_HEADER) + 1) / sizeof(struct index_entry);
 	heap_index_heapify(&heap);
 	while (heap.count)
 	{
@@ -185,6 +185,8 @@ int db_persist(struct db *restrict db)
 		heap_index_pop(&heap);
 		heap.data[heap.count] = entry;
 	}
+
+	munmap(buffer, db->index_offset);
 
 	// Replace old data database with the new one.
 	memcpy(path, db->data_path, db->data_path_length);
@@ -220,6 +222,7 @@ int db_open(struct search *restrict search)
 {
 	struct search temp;
 	int fd;
+	void *buffer;
 
 	// Generate paths to database files.
 	temp.data_path_length = path_generate(temp.data_path, DB_DATA_NAME, sizeof(DB_DATA_NAME) - 1);
@@ -229,7 +232,6 @@ int db_open(struct search *restrict search)
 	if (!temp.index_path_length)
 		return ERROR;
 
-	// Open data database and write header.
 	fd = open(temp.data_path, O_RDONLY);
 	if (fd < 0)
 		return ERROR;
@@ -239,10 +241,11 @@ int db_open(struct search *restrict search)
 		return ERROR;
 	}
 
-	temp.data_buffer = mmap(0, temp.info.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+	buffer = mmap(0, temp.info.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
 	close(fd);
-	if (temp.data_buffer == MAP_FAILED)
+	if (buffer == MAP_FAILED)
 		return ERROR;
+	temp.data_buffer = buffer;
 
 	// Check file header.
 	if (temp.info.st_size < (sizeof(DB_HEADER) - 1))
@@ -263,7 +266,101 @@ void db_close(const struct search *restrict search)
 	munmap(search->data_buffer, search->info.st_size);
 }
 
-int db_file_info(struct file *restrict file, char *path, size_t path_length, const struct stat *restrict info)
+static int update_match(struct file *restrict file, const unsigned char *buffer, const char *restrict path, size_t length)
+{
+	struct file temp;
+
+	memcpy(&temp, buffer, sizeof(temp));
+
+	if (temp.path_length != length)
+		return ERROR_MISSING;
+
+	if (memcmp(buffer + sizeof(temp), path, length))
+		return ERROR_MISSING;
+
+	memcpy(file, &temp, sizeof(temp));
+
+	return 0;
+}
+
+int db_find_fileinfo(struct file *restrict file, const char *restrict path, size_t length, const struct search *restrict search)
+{
+	int fd;
+	struct stat info;
+	void *buffer;
+	size_t index_size;
+
+	uint32_t hashsum;
+	struct index_entry *entries;
+
+	int status;
+
+	fd = open(search->index_path, O_RDONLY);
+	if (fd < 0)
+		return ERROR;
+	if (fstat(fd, &info) < 0)
+	{
+		close(fd);
+		return ERROR;
+	}
+
+	buffer = mmap(0, info.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+	close(fd);
+	if (buffer == MAP_FAILED)
+		return ERROR;
+
+	index_size = info.st_size - sizeof(DB_HEADER) + 1;
+	entries = (void *)((char *)buffer + sizeof(DB_HEADER) - 1); // TODO ugly casting hack; think how to fix
+	hashsum = hash((const unsigned char *)path, length);
+
+	// Use binary search to look for the path hash in the index.
+	// Search the entries with the given hash until the actual path matches.
+	{
+		size_t low = 0, high = index_size / sizeof(*entries);
+		size_t i;
+		ssize_t i_offset;
+
+		while (low < high)
+		{
+			i = (high - low) / 2 + low;
+
+			if (entries[i].hash == hashsum)
+				break;
+			else if (entries[i].hash > hashsum)
+				high = i;
+			else // entries[i].hash < hashsum
+				low = i + 1;
+		}
+
+		status = ERROR_MISSING;
+
+		i_offset = 0;
+		do
+		{
+			status = update_match(file, search->data_buffer + entries[i + i_offset].start, path, length);
+			if (!status)
+				goto finally;
+
+			i_offset += 1;
+		} while (entries[i + i_offset].hash == hashsum);
+
+		i_offset = -1;
+		while (entries[i + i_offset].hash == hashsum)
+		{
+			status = update_match(file, search->data_buffer + entries[i + i_offset].start, path, length);
+			if (!status)
+				goto finally;
+
+			i_offset -= 1;
+		}
+	}
+
+finally:
+	munmap(buffer, info.st_size);
+	return status;
+}
+
+int db_set_fileinfo(struct file *restrict file, char *path, size_t path_length, const struct stat *restrict info)
 {
 	struct stat hardlink_info;
 	uint16_t length = path_length;

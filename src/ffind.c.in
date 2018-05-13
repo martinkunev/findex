@@ -278,12 +278,18 @@ static int execute(const char *path, const struct file *restrict file, char *arg
 	}
 }
 
+static inline int in_directory(const char *restrict path, size_t path_length, const char *restrict directory, size_t directory_length)
+{
+	if (path_length < directory_length)
+		return 0;
+	if ((path_length > directory_length) && (path[directory_length] != '/'))
+		return 0;
+	return !memcmp(path, directory, directory_length);
+}
+
 static int find(const unsigned char *db, size_t dbsize, int (*callback)(const char *restrict , const struct file *restrict, char *[]), char *argv[])
 {
 	struct file file;
-	uint16_t raw;
-	uint32_t raw32;
-	uint64_t raw64;
 	const unsigned char *path;
 
 	size_t offset, left;
@@ -298,8 +304,6 @@ static int find(const unsigned char *db, size_t dbsize, int (*callback)(const ch
 		memcpy((void *)&file, db + offset, sizeof(file));
 		offset += sizeof(file);
 
-		raw = file.path_length;
-		file.path_length = raw;
 		// if (!file.path_length) ;
 
 		left = dbsize - offset;
@@ -308,22 +312,8 @@ static int find(const unsigned char *db, size_t dbsize, int (*callback)(const ch
 		// if (path[0] != '/') ;
 		offset += file.path_length;
 
-		raw = file.content;
-		file.content = raw;
-
-		raw32 = file.mime_type;
-		file.mime_type = raw32;
-
-		raw64 = file.mtime;
-		file.mtime = raw64;
-
-		raw64 = file.size;
-		file.size = raw64;
-
-		// TODO type filter
-
 		// Apply the filters.
-		if ((file.path_length < location_length) || memcmp(path, location, location_length))
+		if (!in_directory(path, file.path_length, location, location_length))
 			continue;
 		if ((file.size < size_min) || (size_max < file.size))
 			continue;
@@ -358,6 +348,8 @@ int main(int argc, char *argv[])
 		// Parse filters.
 		if (*argv[index] == '-')
 		{
+			// TODO type filter (set filecontent)
+
 			if (!memcmp(argv[index] + 1, STRING("version")) || ((argv[index][1] == '-') && !memcmp(argv[index] + 2, STRING("version"))))
 			{
 				return version(0);
@@ -482,8 +474,9 @@ int main(int argc, char *argv[])
 	struct search search;
 	int status;
 
-	char path[PATH_SIZE_LIMIT + 1];
-	if (normalize(path, &location_length, location, location_length)) return -1; // TODO
+	char path[PATH_SIZE_LIMIT];
+	if (normalize(path, &location_length, location, location_length))
+		return -1; // TODO
 	location = path;
 
 	status = db_open(&search);
