@@ -278,7 +278,7 @@ static int execute(const char *path, const struct file *restrict file, char *arg
 	}
 }
 
-static inline int in_directory(const char *restrict path, size_t path_length, const char *restrict directory, size_t directory_length)
+static inline int in_directory(const unsigned char *restrict path, size_t path_length, const char *restrict directory, size_t directory_length)
 {
 	if (path_length < directory_length)
 		return 0;
@@ -287,7 +287,7 @@ static inline int in_directory(const char *restrict path, size_t path_length, co
 	return !memcmp(path, directory, directory_length);
 }
 
-static int find(const unsigned char *db, size_t dbsize, int (*callback)(const char *restrict , const struct file *restrict, char *[]), char *argv[])
+static int find(const unsigned char *db, size_t dbsize, int (*callback)(const char *restrict, const struct file *restrict, char *[]), char *argv[])
 {
 	struct file file;
 	const unsigned char *path;
