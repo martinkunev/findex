@@ -8,6 +8,15 @@ all:
 	$(MAKE) -C src $@
 	gzip < ffind.1 > ffind.1.gz
 
+findex:
+	$(MAKE) -C src $@
+
+ffind:
+	$(MAKE) -C src $@
+
+finfo:
+	$(MAKE) -C src $@
+
 check:
 	$(MAKE) -C test $@
 

@@ -10,7 +10,7 @@
 #include "path.h"
 #include "db.h"
 #include "magic.h"
-#include "string.h"
+#include "array_string.h"
 
 #define STRING(s) (s), sizeof(s) - 1
 
@@ -74,31 +74,51 @@ static void print(const char *name, size_t name_length, const struct file *restr
 int main(int argc, char *argv[])
 {
 	int i;
+	int status;
+
+	struct search search;
 
 	// TODO better error handling
 
 	if ((argc < 2) || !strcmp(argv[1], "--help"))
 		return usage(0);
 
+	status = db_open(&search);
+	if (status < 0)
+		return -status;
+
 	for(i = 1; i < argc; i += 1)
 	{
 		int status;
-		struct stat info;
+		//struct stat info;
 		size_t length;
 		struct file file;
 
-		if (stat(argv[i], &info) < 0)
-			return ERROR;
+		char path[PATH_SIZE_LIMIT + 1];
 
 		length = strlen(argv[i]);
-		status = db_file_info(&file, argv[i], length, &info);
+
+		status = normalize(path, &length, argv[i], length);
 		if (status < 0)
-			return -status;
+			break;
+
+		/*if (stat(argv[i], &info) < 0)
+		{
+			status = ERROR;
+			break;
+		}*/
+
+		//status = db_set_fileinfo(&file, path, length, &info);
+		status = db_find_fileinfo(&file, path, length, &search);
+		if (status < 0)
+			break;
 
 		if (i > 1)
 			putc('\n', stdout); // separate output by new lines
 		print(argv[i], length, &file);
 	}
 
-	return 0;
+	db_close(&search);
+
+	return -status;
 }
