@@ -8,7 +8,7 @@
 # include <cmocka.h> /* libcmocka */
 #endif
 
-#include "string.h"
+#include "array_string.h"
 
 #define NAME_CAT_EXPAND(a, b) a ## b
 #define NAME_CAT(a, b) NAME_CAT_EXPAND(a, b)
