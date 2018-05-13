@@ -1,21 +1,22 @@
 # FILEMENT INDEX
 
-Filement Index is a simple collection of tools for indexed search and file metadata lookup. It uses a file-based database. It consists of two applications:
+Filement Index is a simple collection of tools for indexed search and file metadata lookup. It uses a file-based database. It consists of three applications:
 findex - Traverses the filesystem and stores file metadata in the database.
 ffind - Finds files in the database, based on filtering criteria. Uses interface similar to that of find(1).
+finfo - Displays information about files either directly or by using the database.
 
 Filement Index is in an early stage of development and a lot of things need improvement. The format of the database will probably change in the future.
 
 Filement Index is created to solve several problems:
-overcome the problems of tools like locate and slocate
+* overcome the problems of tools like locate and slocate
 - locate is prone to privilege escalation attacks because it runs with SUID
-- regular users can only use locate's database through locate; this leads to various issues when an application wants to perform indexed search
+- locate is designed only as a tool for users - an application cannot access locate's database
 - locate provides only filename information and supports only search by filename
 - regular users can't update the database of locate
-provide a database for fast lookup of file information
+* provide a database for fast lookup of file information
 	File type must be recognized by file contents. This can be done once and stored in a database for future lookup. If you are interested in the reasoning that led me to that conclusion, read the manifesto.
 
-The database of Filement Index can be useful for the following types of application:
+The database of Filement Index can be useful for the following types of applications:
 * search tools
 * file managers
 * servers that need fast lookup of file information (e.g. http server)
@@ -45,7 +46,6 @@ $ rm ~/.cache/filement
 
 Use findex to create a database with file information. You must specify what directories to be indexed (typically this would be your user's home directory). Depending on the number of files this can take from several seconds to several minutes.
 The database is user-specific. This means that each user must run findex on the files they want indexed.
-You can use cron to make findex run every once in a while (for example every night).
 
 Once the database exists, you can use ffind to find files in it. The syntax of ffind is similar to that of find. ffind searches only in the database (not in the filesystem). See ffind(1) for more information.
 
@@ -53,9 +53,9 @@ Once the database exists, you can use ffind to find files in it. The syntax of f
 
 For each indexed file, the database stores the following information:
 path	Absolute path to the file.
-mode	Access rights and other information as provided by lstat(2).
 content	Information about file contents.
+mime	MIME type of the file.
 mtime	Time of last modification.
 size	File size in bytes.
 
-File type (content) recognition is in a very early phase. Work is done to improve it.
+File type (content) recognition is in an early stage of development. Work is done to improve it.

@@ -114,7 +114,7 @@ Source parameters:
 
 ### Example
 
-For an implementation of in-place sorting, see `sort.h` and `sort.c`.
+For an implementation of in-place unstable sorting, see `sort.h` and `sort.c`.
 
 ### Use as a static type
 
