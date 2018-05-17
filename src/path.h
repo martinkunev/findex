@@ -19,4 +19,13 @@
 
 enum {PATH_SIZE_LIMIT = 4096};
 
+struct path_buffer
+{
+	size_t prefix_length;
+	char data[PATH_SIZE_LIMIT];
+};
+
+int path_init(struct path_buffer *restrict path);
+size_t path_set(struct path_buffer *restrict path, const char *restrict name, size_t name_length);
+
 int normalize(char path[static restrict PATH_SIZE_LIMIT], size_t *restrict path_length, const char *restrict raw, size_t raw_length);

@@ -55,78 +55,52 @@ struct index_entry
 
 #define INDEX_SIZE_LIMIT (64 * 1024 * 1024)
 
-#define PATH_PREFIX "/.cache/filement/" /* relative path to directory storing database */
-
-static size_t path_generate(char path[static PATH_SIZE_LIMIT + 1], const char *restrict name, size_t name_length)
-{
-	const char *home;
-	size_t length;
-
-	home = getenv("HOME");
-	if (!home)
-		return 0;
-
-	length = strlen(home);
-	if ((length + sizeof(PATH_PREFIX) - 1 + name_length + 1) > PATH_SIZE_LIMIT)
-		return 0;
-
-	memcpy(path, home, length);
-
-	memcpy(path + length, PATH_PREFIX, sizeof(PATH_PREFIX) - 1);
-	length += sizeof(PATH_PREFIX) - 1;
-
-	memcpy(path + length, name, name_length);
-	length += name_length;
-
-	path[length] = 0;
-
-	return length;
-}
-
-static size_t path_change(char dir[static PATH_SIZE_LIMIT + 1], size_t dir_length, const char *restrict name, size_t name_length)
-{
-	size_t length;
-	memcpy(dir + dir_length, name, name_length);
-	length = dir_length + name_length;
-	dir[length] = 0;
-	return length;
-}
-
 int db_new(struct db *restrict db)
 {
 	struct db temp;
+	int status;
 
-	// Generate paths to database files.
-	temp.data_path_length = path_generate(temp.data_path, DB_DATA_TEMPNAME, sizeof(DB_DATA_TEMPNAME) - 1);
-	if (!temp.data_path_length)
-		return ERROR;
-	temp.index_path_length = path_generate(temp.index_path, DB_INDEX_TEMPNAME, sizeof(DB_INDEX_TEMPNAME) - 1);
-	if (!temp.index_path_length)
-		return ERROR;
+	struct path_buffer path_buffer;
+	size_t length;
+
+	// Initialize path for database files.
+	status = path_init(&path_buffer);
+	if (status < 0)
+		return status;
 
 	// Open data database and write header.
-	temp.data = fs_load(temp.data_path, temp.data_path_length, DB_ACCESS, 1);
+	length = path_set(&path_buffer, DB_DATA_TEMPNAME, sizeof(DB_DATA_TEMPNAME) - 1);
+	temp.data = fs_load(path_buffer.data, length, DB_ACCESS, 1);
 	if (temp.data < 0)
 		return temp.data;
 	if (write(temp.data, DB_HEADER, sizeof(DB_HEADER) - 1) < 0)
 	{
-		unlink(temp.data_path);
+		unlink(path_buffer.data);
 		close(temp.data);
 		return ERROR;
 	}
 	temp.data_offset = sizeof(DB_HEADER) - 1;
 
 	// Open index database and write header.
-	temp.index = fs_load(temp.index_path, temp.index_path_length, DB_ACCESS, 1);
+	length = path_set(&path_buffer, DB_INDEX_TEMPNAME, sizeof(DB_INDEX_TEMPNAME) - 1);
+	temp.index = fs_load(path_buffer.data, length, DB_ACCESS, 1);
 	if (temp.index < 0)
 	{
-		unlink(temp.data_path);
+		path_set(&path_buffer, DB_DATA_TEMPNAME, sizeof(DB_DATA_TEMPNAME) - 1);
+		unlink(path_buffer.data);
 		close(temp.data);
+
 		return temp.index;
 	}
 	if (write(temp.index, DB_HEADER, sizeof(DB_HEADER) - 1) < 0)
 	{
-		db_delete(&temp);
+		unlink(path_buffer.data);
+		close(temp.index);
+
+		path_set(&path_buffer, DB_DATA_TEMPNAME, sizeof(DB_DATA_TEMPNAME) - 1);
+		unlink(path_buffer.data);
+		close(temp.data);
+
 		return ERROR;
 	}
 	temp.index_offset = sizeof(DB_HEADER) - 1;
@@ -163,9 +137,11 @@ int db_add(struct db *restrict db, const char *restrict path, size_t path_length
 
 int db_persist(struct db *restrict db)
 {
-	char path[PATH_SIZE_LIMIT + 1];
 	void *buffer;
 	struct heap_index heap;
+
+	struct path_buffer path_origin;
+	struct path_buffer path_target;
 
 	close(db->data);
 
@@ -188,32 +164,52 @@ int db_persist(struct db *restrict db)
 
 	munmap(buffer, db->index_offset);
 
+	assert(path_init(&path_origin) == 0);
+	memcpy(path_target.data, path_origin.data, path_origin.prefix_length);
+	path_target.prefix_length = path_origin.prefix_length;
+
 	// Replace old data database with the new one.
-	memcpy(path, db->data_path, db->data_path_length);
-	assert(sizeof(DB_DATA_NAME) < sizeof(DB_DATA_TEMPNAME)); // ensures the following operation will succeed
-	path_change(path, db->data_path_length - sizeof(DB_DATA_TEMPNAME) + 1, DB_DATA_NAME, sizeof(DB_DATA_NAME) - 1);
-	if (rename(db->data_path, path) < 0)
-		goto error;
+	path_set(&path_origin, DB_DATA_TEMPNAME, sizeof(DB_DATA_TEMPNAME) - 1);
+	path_set(&path_target, DB_DATA_NAME, sizeof(DB_DATA_NAME) - 1);
+	if (rename(path_origin.data, path_target.data) < 0)
+	{
+		unlink(path_origin.data);
+		path_set(&path_origin, DB_INDEX_TEMPNAME, sizeof(DB_INDEX_TEMPNAME) - 1);
+		unlink(path_origin.data);
+
+		return ERROR; // TODO error code
+	}
 
 	// Replace old index database with the new one.
-	memcpy(path, db->index_path, db->index_path_length);
-	assert(sizeof(DB_INDEX_NAME) < sizeof(DB_INDEX_TEMPNAME)); // ensures the following operation will succeed
-	path_change(path, db->index_path_length - sizeof(DB_INDEX_TEMPNAME) + 1, DB_INDEX_NAME, sizeof(DB_INDEX_NAME) - 1);
-	if (rename(db->index_path, path) < 0)
-		goto error; // TODO we can possibly have index not corresponding to the database here. handle this
+	path_set(&path_origin, DB_INDEX_TEMPNAME, sizeof(DB_INDEX_TEMPNAME) - 1);
+	path_set(&path_target, DB_INDEX_NAME, sizeof(DB_INDEX_NAME) - 1);
+	if (rename(path_origin.data, path_target.data) < 0)
+	{
+		unlink(path_target.data); // cleanup outdated index
+		// TODO issue warning that index wasn't created
+
+		unlink(path_origin.data);
+		path_set(&path_origin, DB_DATA_TEMPNAME, sizeof(DB_DATA_TEMPNAME) - 1);
+		unlink(path_origin.data);
+
+		return ERROR; // TODO error code
+	}
 
 	return 0;
-
-error:
-	db_delete(db);
-	return ERROR;
 }
 
 void db_delete(struct db *restrict db)
 {
-	unlink(db->data_path);
-	unlink(db->index_path);
+	struct path_buffer buffer;
+
+	assert(path_init(&buffer) == 0);
+
+	path_set(&buffer, DB_DATA_NAME, sizeof(DB_DATA_NAME) - 1);
+	unlink(buffer.data);
 	close(db->data);
+
+	path_set(&buffer, DB_INDEX_NAME, sizeof(DB_INDEX_NAME) - 1);
+	unlink(buffer.data);
 	close(db->index);
 }
 
@@ -221,18 +217,19 @@ void db_delete(struct db *restrict db)
 int db_open(struct search *restrict search)
 {
 	struct search temp;
+	int status;
 	int fd;
 	void *buffer;
 
-	// Generate paths to database files.
-	temp.data_path_length = path_generate(temp.data_path, DB_DATA_NAME, sizeof(DB_DATA_NAME) - 1);
-	if (!temp.data_path_length)
-		return ERROR;
-	temp.index_path_length = path_generate(temp.index_path, DB_INDEX_NAME, sizeof(DB_INDEX_NAME) - 1);
-	if (!temp.index_path_length)
-		return ERROR;
+	struct path_buffer path_buffer;
 
-	fd = open(temp.data_path, O_RDONLY);
+	// Initialize path for database files.
+	status = path_init(&path_buffer);
+	if (status < 0)
+		return status;
+
+	path_set(&path_buffer, DB_DATA_NAME, sizeof(DB_DATA_NAME) - 1);
+	fd = open(path_buffer.data, O_RDONLY);
 	if (fd < 0)
 		return ERROR;
 	if (fstat(fd, &temp.info) < 0)
@@ -295,7 +292,14 @@ int db_find_fileinfo(struct file *restrict file, const char *restrict path, size
 
 	int status;
 
-	fd = open(search->index_path, O_RDONLY);
+	struct path_buffer path_buffer;
+
+	status = path_init(&path_buffer);
+	if (status < 0)
+		return status;
+	path_set(&path_buffer, DB_INDEX_NAME, sizeof(DB_INDEX_NAME) - 1);
+
+	fd = open(path_buffer.data, O_RDONLY);
 	if (fd < 0)
 		return ERROR;
 	if (fstat(fd, &info) < 0)

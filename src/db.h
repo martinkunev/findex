@@ -23,19 +23,11 @@ struct db
 	off_t index_offset;
 	int data;
 	int index;
-	size_t data_path_length;
-	size_t index_path_length;
-	char data_path[PATH_SIZE_LIMIT + 1];
-	char index_path[PATH_SIZE_LIMIT + 1];
 };
 
 struct search
 {
 	struct stat info;
-	size_t data_path_length;
-	size_t index_path_length;
-	char data_path[PATH_SIZE_LIMIT + 1];
-	char index_path[PATH_SIZE_LIMIT + 1];
 	unsigned char *data_buffer;
 };
 

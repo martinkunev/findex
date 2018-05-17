@@ -25,6 +25,46 @@
 #include "base.h"
 #include "path.h"
 
+#define PATH_PREFIX "/.cache/filement/" /* relative path to directory storing database */
+
+enum {FILENAME_SIZE_LIMIT = 255};
+
+// Total path length with NUL is limited to PATH_SIZE_LIMIT.
+// Path component length is limited to FILENAME_SIZE_LIMIT.
+int path_init(struct path_buffer *restrict path)
+{
+	const char *home;
+	size_t home_length;
+
+	home = getenv("HOME");
+	if (!home)
+		return ERROR; // TODO error code
+
+	home_length = strlen(home);
+	if ((home_length + sizeof(PATH_PREFIX) - 1 + FILENAME_SIZE_LIMIT + 1) > PATH_SIZE_LIMIT)
+		return ERROR_UNSUPPORTED;
+
+	memcpy(path->data, home, home_length);
+	memcpy(path->data + home_length, PATH_PREFIX, sizeof(PATH_PREFIX) - 1);
+
+	path->prefix_length = home_length + sizeof(PATH_PREFIX) - 1;
+
+	return 0;
+}
+
+size_t path_set(struct path_buffer *restrict path, const char *restrict name, size_t name_length)
+{
+	size_t length;
+
+	assert(name_length <= FILENAME_SIZE_LIMIT);
+
+	memcpy(path->data + path->prefix_length, name, name_length);
+	length = path->prefix_length + name_length;
+	path->data[length] = 0;
+
+	return length;
+}
+
 // Generates a normalized absolute path corresponding to a given path (getting current directory if necessary). Terminates the string with NUL.
 int normalize(char path[static restrict PATH_SIZE_LIMIT], size_t *restrict path_length, const char *restrict raw, size_t raw_length)
 {
