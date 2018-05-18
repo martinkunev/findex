@@ -35,7 +35,7 @@ chmod 0444, 'src/ffind.c';
 $prefix .= '/';
 $prefix =~ s|/|\\/|g;
 
-my $cflags = ($debug ? '-O0 -g' : '-O2 -fstrict-aliasing -fomit-frame-pointer');
+my $cflags = ($debug ? '-O0 -g' : '-O2 -fstrict-aliasing -fomit-frame-pointer -DNDEBUG');
 
 unlink 'Makefile';
 qx(sed -e "s/\@{PREFIX}/$prefix/g" -e "s/\@{VERSION}/$version/g" -e "s/\@{CFLAGS}/$cflags/g" Makefile.in > Makefile);
