@@ -1,6 +1,6 @@
 /*
  * Filement Index
- * Copyright (C) 2017  Martin Kunev <martinkunev@gmail.com>
+ * Copyright (C) 2018  Martin Kunev <martinkunev@gmail.com>
  *
  * This file is part of Filement Index.
  *
@@ -78,7 +78,7 @@ static int version(int code)
 {
 	write(1, STRING(
 "ffind " VERSION "\n"
-"Copyright (C) 2017  Martin Kunev <martinkunev@gmail.com>\n"
+"Copyright (C) 2018  Martin Kunev <martinkunev@gmail.com>\n"
 "License GPLv3: GNU GPL version 3 <http://gnu.org/licenses/gpl.html>\n"
 "This is free software: you are free to change and redistribute it.\n"
 "There is NO WARRANTY, to the extent permitted by law.\n"
