@@ -1,3 +1,32 @@
+update man page and help
+
+restore support for file type in ffind
+
+update year to 2018
+
+0.2.0
+
+logging module
+
+logging for findex
+
+move database management into a library so that it can be used externally
+document the library
+
+0.3.0
+
+database compression
+
+use magic file from file
+
+integrate into some file manager
+
+more indices
+
+support large filesize for path index
+
+----
+
 Redesign file content values and handling
 
 command line tool named fstat or ffile

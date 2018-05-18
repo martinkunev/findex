@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
 
 	if ((argc < 2) || ((argc == 2) && !strcmp(argv[1], "--help")))
 	{
-		write(2, STRING("Usage: ./findex <path> ...\n"));
+		write(2, STRING("Usage: findex <path> ...\n"));
 		return ERROR_INPUT;
 	}
 

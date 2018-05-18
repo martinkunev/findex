@@ -3,7 +3,7 @@
 Filement Index is a simple collection of tools for indexed search and file metadata lookup. It uses a file-based database. It consists of three applications:
 findex - Traverses the filesystem and stores file metadata in the database.
 ffind - Finds files in the database, based on filtering criteria. Uses interface similar to that of find(1).
-finfo - Displays information about files either directly or by using the database.
+ffile - Displays information about files by using the database.
 
 Filement Index is in an early stage of development and a lot of things need improvement. The format of the database will probably change in the future.
 

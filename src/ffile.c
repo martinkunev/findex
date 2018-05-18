@@ -18,7 +18,7 @@
 static int usage(int code)
 {
 	write(1, STRING(
-"Usage: finfo <file> ...\n"
+"Usage: ffile <file> ...\n"
 	));
 	return code;
 }

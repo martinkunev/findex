@@ -14,7 +14,7 @@ findex:
 ffind:
 	$(MAKE) -C src $@
 
-finfo:
+ffile:
 	$(MAKE) -C src $@
 
 check:
@@ -39,11 +39,11 @@ distclean: clean
 install: all
 	install -s src/findex @{PREFIX}bin/
 	install -s src/ffind @{PREFIX}bin/
-	install -s src/finfo @{PREFIX}bin/
+	install -s src/ffile @{PREFIX}bin/
 	install ffind.1.gz /usr/share/man/man1/
 
 uninstall:
 	rm -f @{PREFIX}bin/findex
 	rm -f @{PREFIX}bin/ffind
-	rm -f @{PREFIX}bin/finfo
+	rm -f @{PREFIX}bin/ffile
 	rm -f /usr/share/man/man1/ffind.1.gz
