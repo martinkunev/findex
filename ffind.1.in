@@ -3,9 +3,13 @@
 .SH NAME
 ffind - indexed search for files in a directory hierarchy
 .SH SYNOPSIS
-\fBffind\fR <path> [FILTERS...] [\fB-exec\fR COMMAND ;]
+\fBffind\fR <PATH> [FILTERS...] [\fB-print\fR]
+.TP
+\fBffind\fR <PATH> [FILTERS...] \fB-exec\fR <COMMAND> ;
+.TP
+\fBffind\fR <PATH> [FILTERS...] \fB-info\fR
 .SH DESCRIPTION
-\fBffind\fR searches the database created by findex for files located in <path> that match all the specified filters. An action is performed for each of the files found.
+\fBffind\fR searches the database created by findex for files located in <PATH> that match all the specified filters. An action is performed for each of the files found.
 .SH EXPRESSIONS
 .SS FILTERS
 .TP
@@ -14,32 +18,6 @@ File is named \fIname\fR. Wildcards `?' and `*' are supported.
 .TP
 \fB-path\fR \fIpath\fR
 File path is \fIpath\fR. Wildcards `?' and `*' are supported.
-.TP
-\fB-type\fR \fItype\fR
-File is of type \fItype\fR. Supported values:
-.RS
-.TP
-`f'
-regular file
-.TP
-`d'
-directory
-.TP
-`l'
-soft link
-.TP
-`b'
-block device
-.TP
-`c'
-character device
-.TP
-`p'
-named pipe
-.TP
-`s'
-socket
-.RE
 .TP
 \fB-size\fR \fIn\fR[ckKMGT]
 The file has size of \fIn\fR units. The default unit is bytes. Supported units:
@@ -61,30 +39,53 @@ gigabytes (1024 megabytes)
 terabytes (1024 gigabytes)
 .RE
 .TP
+\fB-type\fR \fItype\fR
+File is of type \fItype\fR. Supported values:
+.RS
+.TP
+`d'
+directory
+.TP
+`l'
+soft link
+.RE
+.TP
 \fB-content\fR \fIcontent\fR
 Filter by file content. Supported values for \fIcontent\fR:
 .RS
 .TP
-text
+`text'
 Text file encoded in UTF-8
 .TP
-archive
+`archive'
 Archive or compressed archive
 .TP
-document
+`document'
 Formatted document file
 .TP
-image
+`image'
 Image file
 .TP
-audio
+`audio'
 Audio data file
 .TP
-video
+`video'
 Video data file
 .TP
-multimedia
-Multimedia file
+`database'
+Database file
+.TP
+`directory'
+File directory
+.TP
+`link'
+Symbolic (soft) link
+.TP
+`executable'
+Executable file or library
+.TP
+`special'
+Special file (device, socket, pipe, etc.)
 .RE
 .PP
 .SS ACTIONS
@@ -92,6 +93,9 @@ The default action is \fB-print\fR
 .TP
 \fB-print\fR
 Print each match
+.TP
+\fB-info\fR
+Display detailed information about each match
 .TP
 \fB-exec\fR
 Execute a command for each match
@@ -102,10 +106,16 @@ Finds all the files which are recognized as images.
 .TP
 $ ffind /home/foo -name '*.db' -size +1G
 Finds the files in /home/foo with name ending in .db which are at least 1GiB big.
+.TP
+$ ffind /home/bar -info
+Displays detailed information about each file in /home/bar.
 .SH FILES
 .TP
-~/.cache/filement
+~/.cache/filement/data
 The database searched (user-specific).
+.TP
+~/.cache/filement/index
+Index for the database based on file path (user-specific).
 .SH SEE ALSO
 find(1), locate(1)
 .SH AUTHOR
