@@ -6,10 +6,10 @@ all: findex ffind finfo
 findex: findex.o magic.o path.o fs.o db.o hash.o
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
-ffind: ffind.o format.o magic.o path.o fs.o db.o hash.o
+ffind: ffind.o format.o magic.o path.o fs.o db.o hash.o array_string.o details.o
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
-finfo: finfo.o magic.o path.o fs.o db.o hash.o array_string.o
+finfo: finfo.o magic.o path.o fs.o db.o hash.o array_string.o details.o
 	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 clean:

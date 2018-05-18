@@ -32,6 +32,7 @@
 #include "magic.h"
 #include "path.h"
 #include "db.h"
+#include "details.h"
 
 // http://www.cyberciti.biz/faq/linux-unix-creating-a-manpage/
 
@@ -202,16 +203,7 @@ static int print(const char *restrict path, const struct file *restrict file, ch
 
 static int information(const char *path, const struct file *restrict file, char *argv[])
 {
-	unsigned char buffer[256], *end; // TODO make sure the buffer is big enough
-
-	end = format_bytes(buffer, path, file->path_length);
-	end = format_bytes(end, STRING("\nsize="));
-	end = format_int(end, file->size, 10);
-	end = format_bytes(end, STRING("\n\n"));
-	*end = 0;
-
-	write(1, buffer, end - buffer);
-
+	details(path, file->path_length, file);
 	return 0;
 }
 
