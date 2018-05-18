@@ -50,4 +50,4 @@ int db_open(struct search *restrict search);
 void db_close(const struct search *restrict search);
 
 int db_find_fileinfo(struct file *restrict file, const char *restrict path, size_t length, const struct search *restrict search);
-int db_set_fileinfo(struct file *restrict file, char *path, size_t path_length, const struct stat *restrict info);
+int db_set_fileinfo(struct file *restrict file, const char *restrict path, size_t path_length, const struct stat *restrict info);

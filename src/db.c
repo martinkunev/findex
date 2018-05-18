@@ -18,6 +18,7 @@
  */
 
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
 #include <stdlib.h>
@@ -364,20 +365,42 @@ finally:
 	return status;
 }
 
-int db_set_fileinfo(struct file *restrict file, char *path, size_t path_length, const struct stat *restrict info)
+int db_set_fileinfo(struct file *restrict file, const char *restrict path, size_t path_length, const struct stat *restrict info)
 {
 	struct stat hardlink_info;
 	uint16_t length = path_length;
 
 	*file = (struct file){0};
 
-	//fprintf(stderr, "\x1b[31m" "insert" "\x1b[0m %s\n", path);
-
 	// If the file is a soft link, stat information about what it points to.
 	if (S_ISLNK(info->st_mode))
 	{
 		if (stat(path, &hardlink_info) < 0)
-			return ERROR; // TODO more error info
+		{
+			switch (errno)
+			{
+			case EACCES:
+				fprintf(stderr, "WARNING: Cannot stat link target (permission denied) for %s\n", path);
+				return ERROR_CANCEL;
+
+			case ENAMETOOLONG:
+				fprintf(stderr, "WARNING: Cannot stat link target (unsupported) for %s\n", path);
+				return ERROR_CANCEL;
+
+			case ENOENT:
+			case ENOTDIR:
+			case ELOOP:
+				fprintf(stderr, "WARNING: Cannot stat link target (broken link) for %s\n", path);
+				return ERROR_CANCEL;
+
+			default:
+				fprintf(stderr, "ERROR: Cannot stat link target for %s\n", path);
+				return ERROR;
+
+			case ENOMEM:
+				return ERROR_MEMORY;
+			}
+		}
 		info = &hardlink_info;
 
 		file->content |= CONTENT_LINK;
@@ -418,9 +441,6 @@ int db_set_fileinfo(struct file *restrict file, char *path, size_t path_length, 
 	file->path_length = length;
 	file->mtime = info->st_mtime;
 	file->size = info->st_size;
-
-	// TODO this tests that the inode number from stat and directory listing are the same; why do I need this?
-	//printf("%s\t%u\t%u\n", name, (unsigned)entry->d_ino, (unsigned)info.st_ino);
 
 	return 0;
 }
