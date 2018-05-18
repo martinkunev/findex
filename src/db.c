@@ -95,13 +95,7 @@ int db_new(struct db *restrict db)
 	}
 	if (write(temp.index, DB_HEADER, sizeof(DB_HEADER) - 1) < 0)
 	{
-		unlink(path_buffer.data);
-		close(temp.index);
-
-		path_set(&path_buffer, DB_DATA_TEMPNAME, sizeof(DB_DATA_TEMPNAME) - 1);
-		unlink(path_buffer.data);
-		close(temp.data);
-
+		db_delete(&temp);
 		return ERROR;
 	}
 	temp.index_offset = sizeof(DB_HEADER) - 1;
@@ -143,6 +137,7 @@ int db_persist(struct db *restrict db)
 
 	struct path_buffer path_origin;
 	struct path_buffer path_target;
+	int status;
 
 	close(db->data);
 
@@ -150,7 +145,10 @@ int db_persist(struct db *restrict db)
 	buffer = mmap(0, db->index_offset, PROT_WRITE, MAP_SHARED, db->index, 0);
 	close(db->index);
 	if (buffer == MAP_FAILED)
+	{
+		fprintf(stderr, "ERROR: mmap failed for index\n");
 		return ERROR;
+	}
 
 	// Sort index with heap sort.
 	heap.data = (void *)((char *)buffer + sizeof(DB_HEADER) - 1); // TODO ugly casting hack; think how to fix
@@ -165,7 +163,8 @@ int db_persist(struct db *restrict db)
 
 	munmap(buffer, db->index_offset);
 
-	assert(path_init(&path_origin) == 0);
+	status = path_init(&path_origin);
+	assert(status == 0);
 	memcpy(path_target.data, path_origin.data, path_origin.prefix_length);
 	path_target.prefix_length = path_origin.prefix_length;
 
@@ -202,14 +201,16 @@ int db_persist(struct db *restrict db)
 void db_delete(struct db *restrict db)
 {
 	struct path_buffer buffer;
+	int status;
 
-	assert(path_init(&buffer) == 0);
+	status = path_init(&buffer);
+	assert(status == 0);
 
-	path_set(&buffer, DB_DATA_NAME, sizeof(DB_DATA_NAME) - 1);
+	path_set(&buffer, DB_DATA_TEMPNAME, sizeof(DB_DATA_TEMPNAME) - 1);
 	unlink(buffer.data);
 	close(db->data);
 
-	path_set(&buffer, DB_INDEX_NAME, sizeof(DB_INDEX_NAME) - 1);
+	path_set(&buffer, DB_INDEX_TEMPNAME, sizeof(DB_INDEX_TEMPNAME) - 1);
 	unlink(buffer.data);
 	close(db->index);
 }
