@@ -1,4 +1,4 @@
--- File type MUST be recognized by its contents --
+# File type MUST be recognized by file contents
 
 Recently I had an argument on what is the right way for a program to recognize file type. Now I will explain why using file contents is the best way. The other possibilities are file name and creator code.
 
@@ -7,41 +7,50 @@ File type recognition is determining the meaning of file contents. This can be u
 
 File type is a property of file contents and it depends solely on file contents so that's how it should be detected. The way the file is stored does not matter.
 
-	Point: Modifying file contents may change file type.
+* Point: Modifying file contents may change file type.
+
 When modifying a file, its type may change. For example a plain text document may become formatted text; a JPEG image may become PNG image, etc. For the user however the file does not become something distinctly different - the user expects the file to behave the same way as before.
 This implies that file type change must not introduce changes to user perception (if the logical meaning of the data remains unchanged). If file type is determined by its name, such modification will either require change of the name or will break how the user interacts with the file. File names are used to refer to files so such change will break all references (e.g. HTML document referencing an image).
 
-	Point: Not modifying file contents must preserve file type.
+* Point: Not modifying file contents must preserve file type.
+
 Files can be thought of as an elementary unit for information storage and transfer. Files can be moved/copied and transferred via network. These operations are meant to preserve the file (they would be of no use otherwise). The new file should behave the same way as the old one (except for storage-specific behavior). So the new file must be recognized as being the same type as the old one.
 
 A file does not always have a name and very few filesystems support creator code. The standard streams (input, output and error) and files during a network transfer don't have either. Some filesystems and archives also don't require a file to have a name or creator code. Using file name or creator code for type recognition requires taking care to preserve that information when operating on a file. If not possible, either the implementation must forbid the operation or file type information will be lost. In addition, how file type information is preserved is implementation dependent (and thus breaks compatibility).
 
-	Point: End users must not care about implementations.
+* Point: End users must not care about implementations.
+
 End users utilize files to store data. They want to read (view) and modify files. They also want to move, copy and archive them and to send them over network.
 It's not necessary that they know how file type is recognized or even that there is such thing. It's not reasonable to expect a user to distinguish JPEG from PNG - for most users both are just images.
-File name is designed to be an identifier for addresing file contents and to hint the user what the file contains. The latter is violated when the system imposes file name requirements. If the mechanism of file extensions is used, the user must be aware of it and must comply with it. This introduces complexity for the user where the system could have abstracted out that complexity.
-One may argue that hiding filename extensions solves this problem. Actually this is a very bad idea and there are lots of articles explainig problems arising from this approach. Here is one:
-http://www.uzipaz.com/eng/safe.html
 
-	Point: Storing file type in the name breaks the filesystem.
+File name is designed to be an identifier for addresing file contents and to hint the user what the file contains. The latter is violated when the system imposes file name requirements. Such restrictions also get in the way of internationalization. If the mechanism of file extensions is used, the user must be aware of it and must comply with it. This introduces complexity for the user where the system could have abstracted out that complexity.
+
+One may argue that hiding filename extensions solves this problem. Actually this is a very bad idea and there are lots of articles explainig problems arising from this approach. [Here is one](http://www.uzipaz.com/eng/safe.html).
+
+* Point: Storing file type in the name breaks the filesystem.
+
 Most filesystems allow multiple names to point to the same content via soft links and hard links. When file name or content changes, there is no reasonable way to assure that all its names will yield the same file type as the one that can be deduced by file contents.
 
-	Point: Freedom. Simplicity.
+* Point: Freedom. Simplicity.
+
 Recognizing file by its contents naturally ensures the points described above hold. There is no need for any special handling and the user does not need to obey certain rules in order to keep its system from breaking. Forcing rules on file names restricts the user's freedom.
 Storing file type in file name or creator code requires special handling by individual applications and special support by archive formats, filesystems and network protocols. This is additional work for the software developers with no real benefit. It adds new ways in which type recognition can break. It forces the use of a specific application for operating on archives and network transfers because of possible compatibility problems.
 Software implementing type recognition using filenames requires more effort to be kept up to date. For example if a new extension enters in use for XML files with a given DTD, the software can not automatically start recognizing it.
 
-	Point: The only mechanism to store complex file types is in file contents.
+* Point: The only mechanism to store complex file types is in file contents.
+
 Some files are a container for data of multiple file types (multimedia containers come to mind). Neither file name nor creator code are flexible enough to represent such information - they are designed on the assumption that each file has exactly one type. So for type recognition of such files it only makes sense to use file contents.
 
-	Point: File type storage not in file contents is data duplication.
+* Point: File type storage not in file contents is data duplication.
+
 File type can be deduced by its contents. There are some broken file formats for which applying this technique will be more difficult, but this doesn't justify breaking type recognition to patch them. Actually such formats only exist because somebody broke file type recognition in the past. Storing file type in file name or creator code introduces data duplication issues.
 
-	Point: No significant loss.
+* Point: No significant loss.
+
 Some may argue that file type recognition by file contents is slower than by file name because the application needs to open the file and read some bytes from it. In most cases applications need to know file type either when opening the file or when listing multiple files. In present days applications that list files and need to know their types perform much heavier tasks (like showing previews) so there is no real performance loss. In some corner cases there may be a small loss but it is far outweighed by all the benefits described above.
 
-Conclusion
+## Conclusion
 
-File type recognition is done wrong by some applications and operating systems. Once it was not such a bad idea but now it is a legacy for which the only reason to keep is compatibility. It must go because it leads to numerous problems and brings no real benefit.
+File type recognition is done wrong by some applications and operating systems. Once it was not such a bad idea, but now it is a legacy with many problems. It must go because it leads to numerous problems and brings no real benefit.
 
 Recognizing file type by file name is like judging somebody by their name. You can probably guess their sex and nationality but it won't tell you any details about them. Sometimes you will be wrong even for the sex and the nationality.
